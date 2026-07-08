@@ -57,7 +57,7 @@ class BillPaymentPage {
   async selectBiller(billerName) {
     // if (await this.searchBillers.isVisible().catch(() => false)) {
     //   await this.searchBillers.fill(billerName);
-    // }
+    // } 
 
     const tile = this.page.getByText(billerName, { exact: false }).first();
     await expect(tile, `Biller "${billerName}" should be visible in the category`).toBeVisible({ timeout: 60_000 });
