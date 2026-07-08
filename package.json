@@ -1,0 +1,22 @@
+{
+  "name": "sampath-ib-automation",
+  "version": "1.0.0",
+  "description": "Playwright POM automation for Sampath Vishwa Retail Web - Login, Fund Transfer (Own/Other Bank) and Bill Payment",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:own": "playwright test tests/ownFundTransfer.spec.js --headed",
+    "test:otherbank": "playwright test tests/otherBankTransfer.spec.js --headed",
+    "test:billpay": "playwright test tests/billPayment.spec.js --headed",
+    "test:login": "playwright test tests/login.spec.js --headed",
+    "report": "playwright show-report"
+  },
+  "keywords": ["playwright", "pom", "automation", "sampath", "banking"],
+  "author": "Roshan Wickramasooriya",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "dotenv": "^16.4.5"
+  }
+}
