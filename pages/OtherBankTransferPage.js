@@ -17,6 +17,7 @@ class OtherBankTransferPage {
     this.toAccountNumberInput = page.locator('input[name="toAccountNumber"]');
     this.beneficiaryNameInput = page.locator('input[name="accountName"]');
     this.amountInput = page.locator('input[name="amount"]');
+    this.senderRemarkInput = page.locator('input[name="senderRemark"]');
     this.beneficiaryRemarkInput = page.locator('input[name="beneficiaryRemark"]');
     this.transferModeRadios = page.locator('input[name="transferMode"]');
     this.submitButton = page.getByRole("button", { name: "Submit", exact: true });
@@ -67,11 +68,12 @@ class OtherBankTransferPage {
   async enterIntraBankAccount(accountNumber) {
     await this.toAccountNumberInput.click();
     await this.toAccountNumberInput.fill(accountNumber);
-    // The name is fetched from the core banking system for Sampath accounts.
+    // The name is fetched from core banking for Sampath accounts; blur to trigger it.
+    await this.toAccountNumberInput.press("Tab");
     await expect
       .poll(async () => (await this.beneficiaryNameInput.inputValue().catch(() => "")).trim().length, {
         timeout: 20_000,
-        message: "Beneficiary name should auto-fetch for a Sampath (intra-bank) account",
+        message: "Beneficiary name should auto-fetch for a valid Sampath (intra-bank) account",
       })
       .toBeGreaterThan(0);
   }
@@ -81,6 +83,9 @@ class OtherBankTransferPage {
     // Purpose is not always shown for intra-bank transfers - fill it only if present.
     if (data.purpose && (await this.purposeSelect.isVisible().catch(() => false))) {
       await selectOptionByLabelContains(this.purposeSelect, data.purpose);
+    }
+    if (data.senderRemark && (await this.senderRemarkInput.isVisible().catch(() => false))) {
+      await this.senderRemarkInput.fill(data.senderRemark);
     }
     if (data.beneficiaryRemark && (await this.beneficiaryRemarkInput.isVisible().catch(() => false))) {
       await this.beneficiaryRemarkInput.fill(data.beneficiaryRemark);

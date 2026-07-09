@@ -2,14 +2,16 @@ const { expect } = require("@playwright/test");
 
 /**
  * Dashboard Page.
- * Top navigation: Dashboard | My Accounts | Quick Actions (dropdown) | Manage Schedules |
+ * Top navigation: Dashboard | My Accounts | Quick Actions | Manage Schedules |
  *                 Payees & Billers | Portfolio | Self Services.
- * Quick Actions dropdown items: Send Money, Bill Payment, Slipless, Fixed Deposit,
- *                 Account, Web Card, Stop Card, Stop Cheque, Mobile Cash, Freeze Accounts.
+ * Dashboard body sections (all visible without scrolling in the app):
+ *   - "Portfolio"  -> account cards, e.g. "Savings Account ... Available LKR 670,116.04"
+ *   - "Quick Actions" -> tiles: Send Money, Bill Payment, Slipless, Fixed Deposit,
+ *                        Account, Web Card, Stop Card, Stop Cheque, Mobile Cash, Freeze Accounts
+ *   - "Recent Vishwa Transactions", "Favorite Billers", "Favorite Payees"
  *
- * Navigation is done by CLICKING (no URL assertions). Each landing page is
- * validated by the page object it navigates to. This page also owns the
- * "Dashboard page all validations" checks (assertAllValidations).
+ * Locators below are confirmed against the live app's accessibility tree.
+ * Navigation is by CLICKING; each landing page is validated by its own page object.
  */
 class DashboardPage {
   /** @param {import('@playwright/test').Page} page */
@@ -18,24 +20,23 @@ class DashboardPage {
 
     // ---- Top navigation ----
     this.dashboardNav = page.getByRole("button", { name: "Dashboard", exact: true });
-    this.quickActions = page.getByText("Quick Actions", { exact: true }).first();
     this.myAccountsNav = page.getByRole("button", { name: "My Accounts", exact: true });
+    this.quickActions = page.getByText("Quick Actions", { exact: true }).first();
     this.manageSchedulesNav = page.getByText("Manage Schedules", { exact: true }).first();
     this.payeesBillersNav = page.getByText("Payees & Billers", { exact: true }).first();
-    this.portfolioNav = page.getByText("Portfolio", { exact: true }).first();
-    this.selfServicesNav = page.getByText("Self Services", { exact: true }).first();
 
     // ---- Dashboard body (validated by "Dashboard page all validations") ----
-    // VERIFY the exact wording of these against the live app; patterns are tolerant.
-    this.welcomeText = page.getByText(/welcome|good (morning|afternoon|evening)|hello/i).first();
-    this.accountSummaryHeading = page
-      .getByText(/my accounts|account summary|accounts overview/i)
-      .first();
-    // At least one account tile/card showing a balance (currency + amount).
-    this.accountTile = page
-      .locator("[class*='account'], [class*='card']")
-      .filter({ hasText: /lkr|rs\.?|\d{1,3}(,\d{3})*(\.\d{2})?/i })
-      .first();
+    // Accounts live under the "Portfolio" section; a card shows a balance like "LKR 670,116.04".
+    // ("Available" and the amount are separate DOM nodes, so match the currency+amount token.)
+    this.accountsSectionHeading = page.getByRole("heading", { name: /portfolio/i }).first();
+    this.accountBalance = page.getByText(/(lkr|usd)\s*[\d,]+\.\d{2}/i).first();
+    // Quick Actions is a body section with clickable tiles.
+    this.quickActionsHeading = page.getByRole("heading", { name: /quick actions/i }).first();
+    this.recentTransactionsHeading = page.getByRole("heading", { name: /recent vishwa transactions/i }).first();
+
+    // Logout lives inside the profile menu, not directly on the dashboard.
+    // VERIFY the profile-menu trigger against the app; the negative session test uses logout().
+    this.profileMenuTrigger = page.getByRole("button", { name: /profile|account|menu|user/i }).last();
     this.logoutButton = page.getByRole("button", { name: /log ?out|sign ?out/i }).first();
   }
 
@@ -44,14 +45,14 @@ class DashboardPage {
     await expect(this.dashboardNav, "Dashboard navigation should be visible after login").toBeVisible({
       timeout: 60_000,
     });
-    await expect(this.quickActions, "Quick Actions menu should be visible on the dashboard").toBeVisible();
+    await expect(this.quickActions, "Quick Actions should be visible on the dashboard").toBeVisible();
   }
 
   /**
    * ASSERTION: "Dashboard page all validations".
-   * Checks the top-nav items, the account summary area, at least one account
-   * tile, the Quick Actions menu and the logout control are all present.
-   * Uses soft assertions so the report lists every missing element at once.
+   * Checks the top-nav items and the main dashboard body sections (accounts +
+   * balance, Quick Actions, Recent Transactions). Soft assertions so the report
+   * lists every missing element at once.
    */
   async assertAllValidations() {
     await this.assertLoaded();
@@ -63,32 +64,40 @@ class DashboardPage {
     await expect.soft(this.manageSchedulesNav, "Top nav: 'Manage Schedules' should be visible").toBeVisible();
     await expect.soft(this.payeesBillersNav, "Top nav: 'Payees & Billers' should be visible").toBeVisible();
 
-    // Dashboard body.
-    await expect.soft(this.accountSummaryHeading, "Account summary / My Accounts section should be visible")
+    // Accounts (Portfolio) section + at least one account card balance.
+    await expect.soft(this.accountsSectionHeading, "Accounts (Portfolio) section should be visible").toBeVisible();
+    await expect
+      .soft(this.accountBalance, "An account card with an available balance should be visible")
       .toBeVisible();
-    await expect.soft(this.accountTile, "At least one account tile with a balance should be visible")
+
+    // Other main dashboard body sections.
+    await expect.soft(this.quickActionsHeading, "Quick Actions section should be visible").toBeVisible();
+    await expect
+      .soft(this.recentTransactionsHeading, "Recent Vishwa Transactions section should be visible")
       .toBeVisible();
-    await expect.soft(this.logoutButton, "Logout control should be visible on the dashboard").toBeVisible();
   }
 
-  /** ASSERTION: the given Quick Actions items are all present in the dropdown. */
+  /**
+   * ASSERTION: the given Quick Action tiles are visible on the dashboard body.
+   * (On this app the Quick Actions are always-visible tiles, not a dropdown.)
+   */
   async assertQuickActionItems(items) {
-    await this.quickActions.click();
     for (const name of items) {
       const item = this.page.getByText(name, { exact: true }).last();
-      await expect.soft(item, `Quick Action "${name}" should be listed in the menu`).toBeVisible({
-        timeout: 30_000,
-      });
+      await expect.soft(item, `Quick Action "${name}" should be visible`).toBeVisible({ timeout: 30_000 });
     }
-    // Close the dropdown again so it doesn't block later clicks.
-    await this.page.keyboard.press("Escape").catch(() => {});
   }
 
-  /** Opens the Quick Actions dropdown and clicks the given item by its visible text. */
+  /**
+   * Navigates via the top-nav "Quick Actions" dropdown.
+   * The dropdown (a SubMenu component) is collapsed (pointer-events:none) until the
+   * "Quick Actions" nav is clicked; then its links (a.subMenuItem) route to the
+   * feature page. The dashboard body tiles with the same labels are NOT the nav.
+   */
   async openQuickAction(itemName) {
     await this.quickActions.click();
-    const item = this.page.getByText(itemName, { exact: true }).last();
-    await expect(item, `Quick Action "${itemName}" should be visible in the menu`).toBeVisible({ timeout: 60_000 });
+    const item = this.page.locator('a[class*="subMenuItem"]').filter({ hasText: itemName }).first();
+    await expect(item, `Quick Action "${itemName}" should be visible in the menu`).toBeVisible({ timeout: 30_000 });
     await item.click();
   }
 
@@ -104,16 +113,27 @@ class DashboardPage {
     await this.openQuickAction("Stop Card");
   }
 
-  /** Clicks a top-nav item by its visible text (outside the Quick Actions dropdown). */
+  /** Clicks a top-nav item by its visible text. */
   async openTopNav(itemName) {
     const item = this.page.getByText(itemName, { exact: true }).first();
     await expect(item, `Top-nav item "${itemName}" should be visible`).toBeVisible({ timeout: 60_000 });
     await item.click();
   }
 
-  /** Logs out (used by the dashboard negative/session test). */
+  /**
+   * Logs out. Logout sits inside a profile menu, so open that first if the
+   * logout control isn't already visible.
+   * // VERIFY the profile-menu trigger (profileMenuTrigger) against the live app.
+   */
   async logout() {
-    await expect(this.logoutButton, "Logout control should be visible").toBeVisible({ timeout: 30_000 });
+    if (!(await this.logoutButton.isVisible().catch(() => false))) {
+      if (await this.profileMenuTrigger.isVisible().catch(() => false)) {
+        await this.profileMenuTrigger.click().catch(() => {});
+      }
+    }
+    await expect(this.logoutButton, "Logout control should be visible after opening the profile menu").toBeVisible({
+      timeout: 30_000,
+    });
     await this.logoutButton.click();
   }
 }

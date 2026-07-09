@@ -19,14 +19,14 @@ require("dotenv").config();
  * ---------------------------------------------------------------- */
 const credentials = {
   // Set IB_USERNAME / IB_PASSWORD / IB_OTP in your local .env file (see .env.example).
-  username: process.env.IB_USERNAME || "",
-  password: process.env.IB_PASSWORD || "",
+  username: process.env.IB_USERNAME || "gsuser4",
+  password: process.env.IB_PASSWORD || "Hoax@1234",
   otp: process.env.IB_OTP || "111111", // Login & transaction OTP (bypassed in UAT)
 };
 
 const invalidCredentials = {
   wrongPassword: {
-    username: process.env.IB_USERNAME || "invaliduser01",
+    username: process.env.IB_USERNAME || "v11user8",
     password: "Wrong@1234",
   },
   unknownUser: {
@@ -40,7 +40,7 @@ const invalidCredentials = {
  * ---------------------------------------------------------------- */
 const forgotPassword = {
   // A username the "Forgot Password" flow will accept (usually your own).
-  username: process.env.IB_USERNAME || "",
+  username: process.env.IB_USERNAME || "gsuser4",
   nic: process.env.IB_NIC || "", // VERIFY: NIC / other identifier the reset form asks for
   // A username that must NOT be found by the reset flow.
   unknownUsername: "nouser_zzz999",
@@ -63,11 +63,12 @@ const ownTransfer = {
  *    so the beneficiary name is auto-fetched (read-only) instead of typed.
  * ---------------------------------------------------------------- */
 const intraBankTransfer = {
-  fromAccount: "1018 5010 4310",
-  bank: "Sampath",                  // VERIFY: exact Sampath Bank option label
-  toAccountNumber: "0018 5002 2719",
+  fromAccount: "1018 5010 4310",    // must be one of YOUR OWN accounts (the From dropdown)
+  bank: "Sampath",                  // matches "SAMPATH BANK PLC - COMPANY NO PQ 144"
+  toAccountNumber: "101358394971",  // the Sampath beneficiary account you send TO
   amount: "100",
-  purpose: "Wages & Salaries",      // VERIFY: purpose may not appear for intra-bank
+  purpose: "Wages & Salaries",
+  senderRemark: "PW Intra Bank",    // Sender Remark* is required on this form
   beneficiaryRemark: "PW Intra Bank",
 };
 
@@ -99,7 +100,7 @@ const mobileCash = {
  * ---------------------------------------------------------------- */
 const otherCreditCardTransfer = {
   fromAccount: "1018 5010 4310",
-  cardNumber: "4111111111111111",   // VERIFY: beneficiary credit card number field
+  cardNumber: "376657973920377",   // VERIFY: beneficiary credit card number field
   beneficiaryName: "Card Holder",   // typed manually
   amount: "100",
   beneficiaryRemark: "PW Credit Card",

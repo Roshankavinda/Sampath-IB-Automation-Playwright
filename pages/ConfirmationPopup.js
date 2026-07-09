@@ -13,21 +13,35 @@ class ConfirmationPopup {
     this.confirmButton = page.getByRole("button", { name: /confirm|submit|proceed|verify/i }).last();
   }
 
-  /** ASSERTION: the OTP/confirmation popup appeared after Submit. */
+  /**
+   * ASSERTION: the OTP/confirmation popup appeared after Submit.
+   * Races the OTP boxes against the app's error toast so that a "Session TimeOut"
+   * (a known UAT transaction/OTP-service failure that bounces to the dashboard)
+   * is reported clearly and quickly instead of as a vague timeout.
+   */
   async assertVisible() {
-    const appeared = await this.otpBoxes
-      .first()
-      .waitFor({ state: "visible", timeout: 25_000 })
-      .then(() => true)
-      .catch(() => false);
+    const errorToast = this.page
+      .getByText(/session\s*time\s*out|session expired|timed out|failed|declined/i)
+      .first();
 
-    if (!appeared) {
-      const toast = await getToastText(this.page, 2_000);
+    const outcome = await Promise.race([
+      this.otpBoxes.first().waitFor({ state: "visible", timeout: 25_000 }).then(() => "otp").catch(() => null),
+      errorToast.waitFor({ state: "visible", timeout: 25_000 }).then(() => "error").catch(() => null),
+    ]);
+
+    if (outcome === "otp") return;
+
+    const errText = await errorToast.innerText().catch(() => "");
+    const toast = errText || (await getToastText(this.page, 2_000));
+    if (/session\s*time\s*out|session expired|timed out/i.test(toast)) {
       throw new Error(
-        "OTP/confirmation popup did not appear after Submit." +
-          (toast ? ` Application showed: "${toast}".` : "")
+        `Transaction was not accepted: the app returned "${toast.trim()}" on Submit and redirected to the dashboard. ` +
+          "This is an environment/backend issue (transaction or OTP service), not a locator problem."
       );
     }
+    throw new Error(
+      "OTP/confirmation popup did not appear after Submit." + (toast ? ` Application showed: "${toast.trim()}".` : "")
+    );
   }
 
   /** Soft ASSERTIONS on displayed details. */
