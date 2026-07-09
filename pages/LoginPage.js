@@ -19,6 +19,8 @@ class LoginPage {
     this.loginButton = page.getByRole("button", { name: "Login", exact: true });
     this.errorToast = page.getByText(/login failed/i);
     this.otpBoxes = page.locator("input.otp-box");
+    // "Forgot Password" link on the login screen. VERIFY exact wording.
+    this.forgotPasswordLink = page.getByText(/forgot (your )?password/i).first();
   }
 
   /** Opens the only URL-based navigation in the whole suite: the login page. */
@@ -73,6 +75,14 @@ class LoginPage {
     await this.enterCredentials(username, password);
     await this.clickLogin();
     await this.handleOtpIfPresent(otp);
+  }
+
+  /** Opens the Forgot Password flow from the login screen. */
+  async goToForgotPassword() {
+    await expect(this.forgotPasswordLink, "'Forgot Password' link should be visible on the login page").toBeVisible({
+      timeout: 30_000,
+    });
+    await this.forgotPasswordLink.click();
   }
 
   /** ASSERTION: invalid login shows the failure toast and stays on login. */

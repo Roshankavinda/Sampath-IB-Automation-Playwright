@@ -1,16 +1,17 @@
-const { test } = require("../utils/fixtures");
-const { SendMoneyPage } = require("../pages/SendMoneyPage");
-const { MobileCashPage } = require("../pages/MobileCashPage");
-const { ConfirmationPopup } = require("../pages/ConfirmationPopup");
-const { credentials, mobileCash } = require("../test-data/testData");
-const { getToastText } = require("../utils/helpers");
+const { test } = require("../../utils/fixtures");
+const { SendMoneyPage } = require("../../pages/SendMoneyPage");
+const { MobileCashPage } = require("../../pages/MobileCashPage");
+const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
+const { credentials, mobileCash } = require("../../test-data/testData");
+const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Flow: Login -> Send Money -> Mobile Cash ->
- *       From Account -> Mobile Number -> Amount -> One-time -> Submit -> OTP.
+ * Feature: Fund Transfer - Mobile Cash — HAPPY PATH.
+ * Login -> Send Money -> Mobile Cash -> From -> Mobile Number -> Amount ->
+ * One-time -> Submit -> OTP -> success.
  */
-test.describe("Mobile Cash", () => {
-  test("TC_MCASH_01 - Login and send Mobile Cash to a mobile number (One-time)", async ({ page, loggedInDashboard }) => {
+test.describe("Fund Transfer - Mobile Cash - Happy Path", () => {
+  test("TC_FT_MCASH_H01 - Send Mobile Cash to a mobile number (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const mobile = new MobileCashPage(page);
     const popup = new ConfirmationPopup(page);
@@ -48,10 +49,5 @@ test.describe("Mobile Cash", () => {
     });
   });
 
-  test.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== testInfo.expectedStatus) {
-      const toast = await getToastText(page, 1_500);
-      if (toast) await testInfo.attach("last-toast-message", { body: toast, contentType: "text/plain" });
-    }
-  });
+  test.afterEach(async ({ page }, testInfo) => attachToastOnFailure(page, testInfo));
 });

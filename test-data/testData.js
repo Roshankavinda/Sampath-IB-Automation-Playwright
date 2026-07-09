@@ -3,25 +3,52 @@ require("dotenv").config();
 /**
  * ============================================================
  *  EDIT YOUR TEST DATA HERE
+ *  Scope (phase 1): Login, Forgot Password, Dashboard,
+ *  Fund Transfer (Own / Intra Bank / Other Bank / Mobile Cash /
+ *  Other Bank Credit Card), Own Card Settlement, Stop Card,
+ *  Bill Payment (Dialog & Mobitel).
+ *
  *  All dropdown values are PARTIAL label matches - the account
  *  number or part of the name shown in the dropdown is enough.
+ *  Values marked // VERIFY must be confirmed against the live UAT app.
  * ============================================================
  */
 
+/* ----------------------------------------------------------------
+ * 1. Login
+ * ---------------------------------------------------------------- */
 const credentials = {
   // Set IB_USERNAME / IB_PASSWORD / IB_OTP in your local .env file (see .env.example).
-  // No real credentials are hardcoded here - this repo is safe to share/push.
   username: process.env.IB_USERNAME || "",
   password: process.env.IB_PASSWORD || "",
   otp: process.env.IB_OTP || "111111", // Login & transaction OTP (bypassed in UAT)
 };
 
 const invalidCredentials = {
-  username: "invaliduser01",
-  password: "Wrong@1234",
+  wrongPassword: {
+    username: process.env.IB_USERNAME || "invaliduser01",
+    password: "Wrong@1234",
+  },
+  unknownUser: {
+    username: "invaliduser01",
+    password: "Wrong@1234",
+  },
 };
 
-/** Flow 1: Send Money > Own Account */
+/* ----------------------------------------------------------------
+ * 2. Forgot Password
+ * ---------------------------------------------------------------- */
+const forgotPassword = {
+  // A username the "Forgot Password" flow will accept (usually your own).
+  username: process.env.IB_USERNAME || "",
+  nic: process.env.IB_NIC || "", // VERIFY: NIC / other identifier the reset form asks for
+  // A username that must NOT be found by the reset flow.
+  unknownUsername: "nouser_zzz999",
+};
+
+/* ----------------------------------------------------------------
+ * 3. Fund Transfer - Own Account
+ * ---------------------------------------------------------------- */
 const ownTransfer = {
   fromAccount: "1018 5010 4310",
   toAccount: "0018 5002 2719",
@@ -30,135 +57,216 @@ const ownTransfer = {
   beneficiaryRemark: "PW Own Transfer",
 };
 
-/** Flow 2: Send Money > Other Accounts (other bank - branch + manual beneficiary name) */
+/* ----------------------------------------------------------------
+ * 4. Fund Transfer - Intra Bank (Sampath Bank, to another person)
+ *    Same "Other Accounts" screen as Other Bank, but the bank is Sampath,
+ *    so the beneficiary name is auto-fetched (read-only) instead of typed.
+ * ---------------------------------------------------------------- */
+const intraBankTransfer = {
+  fromAccount: "1018 5010 4310",
+  bank: "Sampath",                  // VERIFY: exact Sampath Bank option label
+  toAccountNumber: "0018 5002 2719",
+  amount: "100",
+  purpose: "Wages & Salaries",      // VERIFY: purpose may not appear for intra-bank
+  beneficiaryRemark: "PW Intra Bank",
+};
+
+/* ----------------------------------------------------------------
+ * 5. Fund Transfer - Other Bank (SLIPS / CEFTS, manual beneficiary name)
+ * ---------------------------------------------------------------- */
 const otherBankTransfer = {
   fromAccount: "1018 5010 4310",
-  bank: "TEST BANK B",             // EDIT: part of the bank option label
+  bank: "TEST BANK B",              // EDIT: part of the other-bank option label
   toAccountNumber: "9901234561",
-  beneficiaryName: "Test User", // typed manually for other banks
+  beneficiaryName: "Test User",     // typed manually for other banks
   amount: "100",
-  purpose: "Wages & Salaries",     // part of the purpose option label
+  purpose: "Wages & Salaries",      // part of the purpose option label
   beneficiaryRemark: "PW Other Bank",
 };
 
-/** Flow 3: Bill Payment — Cable TV > Dialog TV */
-const billPayment = {
-  category: "Cable - TV",           // exact label as shown on screen
-  biller: "Dialog TV",              // EDIT: exact biller name once the category opens
+/* ----------------------------------------------------------------
+ * 6. Fund Transfer - Mobile Cash (cardless cash to a mobile number)
+ * ---------------------------------------------------------------- */
+const mobileCash = {
   fromAccount: "1018 5010 4310",
-  referenceFieldName: "Account No", // EDIT: exact reference field label for Dialog TV
-  referenceValue: "60688381",       // EDIT: your Dialog TV account number
-  amount: "500",                    // EDIT: amount (if editable)
+  mobileNumber: "0771234567",       // VERIFY: recipient mobile number field
+  amount: "1000",                   // Mobile Cash often has fixed denominations
+  remark: "PW Mobile Cash",
 };
 
-/** Flow 4: Send Money > Other Credit Cards (pay a credit card by card number) */
+/* ----------------------------------------------------------------
+ * 7. Fund Transfer - Other Bank Credit Card (pay another bank's card)
+ * ---------------------------------------------------------------- */
 const otherCreditCardTransfer = {
   fromAccount: "1018 5010 4310",
-  cardNumber: "4111111111111111", // VERIFY: beneficiary credit card number field
-  beneficiaryName: "Card Holder",  // typed manually
+  cardNumber: "4111111111111111",   // VERIFY: beneficiary credit card number field
+  beneficiaryName: "Card Holder",   // typed manually
   amount: "100",
   beneficiaryRemark: "PW Credit Card",
 };
 
-/** Flow 5: Send Money > Mobile Cash (cardless cash to a mobile number) */
-const mobileCash = {
+/* ----------------------------------------------------------------
+ * 8. Own Card Settlement (settle your OWN Sampath credit card)
+ * ---------------------------------------------------------------- */
+const ownCardSettlement = {
   fromAccount: "1018 5010 4310",
-  mobileNumber: "0771234567",     // VERIFY: recipient mobile number field
-  amount: "1000",                  // Mobile Cash usually has fixed denominations
-  remark: "PW Mobile Cash",
+  card: "4321",                     // VERIFY: part of your own card number/label in the card dropdown
+  settlementType: "Minimum",        // VERIFY: Minimum / Total Outstanding / Other Amount option label
+  amount: "500",                    // used only when settlementType is "Other Amount"
+  remark: "PW Own Card Settlement",
 };
 
-/** Flow 6: Payees & Billers — add a new payee (beneficiary) */
-const newPayee = {
-  payeeType: "Other Bank",        // VERIFY: option label (Own Bank / Other Bank / etc.)
-  bank: "TEST BANK B",            // part of the bank option label
-  accountNumber: "9901234561",
-  beneficiaryName: "Saved Payee One",
-  nickname: "PW Saved Payee",     // display name / nickname for the saved payee
-};
-
-/** Flow 7: Send Money > Saved Payees — transfer to an already-saved payee */
-const savedPayeeTransfer = {
-  fromAccount: "1018 5010 4310",
-  payeeName: "PW Saved Payee",    // must match a saved payee's nickname/name
-  amount: "100",
-  beneficiaryRemark: "PW To Saved Payee",
-};
-
-/** Flow 8: Scheduled / recurring transfer (reuses own-transfer accounts) */
-const scheduledTransfer = {
-  fromAccount: "1018 5010 4310",
-  toAccount: "0018 5002 2719",
-  amount: "100",
-  senderRemark: "PW Scheduled",
-  beneficiaryRemark: "PW Scheduled",
-  // Provide a base date; specs offset from it so runs stay deterministic in reports.
-  baseDate: "2026-07-08",
-  effectiveInDays: 3,             // scheduled date = baseDate + 3 days
-  frequency: "Monthly",           // for recurring: VERIFY option label
-  endInDays: 90,                  // recurring end date = baseDate + 90 days
-};
-
-/** Flow 9: Quick Actions > Fixed Deposit (open a new FD) */
-const fixedDeposit = {
-  fromAccount: "1018 5010 4310",
-  amount: "10000",
-  period: "12",                   // VERIFY: tenure/period option (months) label
-  maturityInstruction: "Renew Principal Only", // VERIFY: maturity option label
-};
-
-/** Flow 10: Quick Actions > Stop Cheque */
-const stopCheque = {
-  account: "1018 5010 4310",
-  chequeNumber: "123456",         // VERIFY: cheque number field
-  reason: "Lost",                 // VERIFY: reason option label
-};
-
-/**
- * Negative / validation data. Each block intentionally triggers a specific
- * validation error; specs assert the app rejects the transaction.
- */
-const negativeTransfers = {
-  insufficientFunds: {
-    fromAccount: "1018 5010 4310",
-    toAccount: "0018 5002 2719",
-    amount: "999999999",          // above available balance
-    senderRemark: "PW Neg InsufficientFunds",
-    beneficiaryRemark: "PW Neg InsufficientFunds",
-    expectedError: /insufficient|balance|exceed/i,
+/* ----------------------------------------------------------------
+ * 9. Stop Card (Credit / Debit / Web)
+ * ---------------------------------------------------------------- */
+const stopCard = {
+  credit: {
+    cardType: "Credit",             // VERIFY: card-type tab/option label
+    card: "4321",                   // VERIFY: part of the card number shown in the list
+    reason: "Lost",                 // VERIFY: reason option label
   },
-  invalidOtherBankAccount: {
-    fromAccount: "1018 5010 4310",
-    bank: "TEST BANK B",
-    toAccountNumber: "1",         // clearly invalid account number
-    beneficiaryName: "Neg Test",
-    amount: "100",
-    purpose: "Wages & Salaries",
-    beneficiaryRemark: "PW Neg InvalidAccount",
-    expectedError: /invalid|not valid|account number|not found/i,
+  debit: {
+    cardType: "Debit",
+    card: "5678",
+    reason: "Stolen",
   },
-  zeroAmount: {
+  web: {
+    cardType: "Web",                // VERIFY: "Web Card" / "Virtual Card" label
+    card: "9012",
+    reason: "Suspected Fraud",
+  },
+};
+
+/* ----------------------------------------------------------------
+ * 10. Bill Payment - Dialog & Mobitel only
+ * ---------------------------------------------------------------- */
+const billPayments = {
+  dialog: {
+    category: "Mobile",             // VERIFY: category tile for mobile operators
+    biller: "Dialog",              // VERIFY: exact Dialog biller name once category opens
     fromAccount: "1018 5010 4310",
-    toAccount: "0018 5002 2719",
-    amount: "0",                  // below minimum
-    senderRemark: "PW Neg ZeroAmount",
-    beneficiaryRemark: "PW Neg ZeroAmount",
-    expectedError: /minimum|greater than|amount|valid/i,
+    referenceFieldName: "Mobile No", // VERIFY: exact reference field label for Dialog
+    referenceValue: "0771234567",   // EDIT: a valid Dialog number/account
+    amount: "500",                  // EDIT: amount (if editable)
+  },
+  mobitel: {
+    category: "Mobile",             // VERIFY
+    biller: "Mobitel",             // VERIFY: exact Mobitel biller name
+    fromAccount: "1018 5010 4310",
+    referenceFieldName: "Mobile No", // VERIFY
+    referenceValue: "0712345678",   // EDIT: a valid Mobitel number/account
+    amount: "500",                  // EDIT
+  },
+};
+
+/* ----------------------------------------------------------------
+ *  NEGATIVE / VALIDATION DATA
+ *  Each block intentionally triggers a specific validation error so the
+ *  spec can assert the app blocks the transaction (before or after OTP).
+ * ---------------------------------------------------------------- */
+const negative = {
+  ownTransfer: {
+    insufficientFunds: {
+      fromAccount: "1018 5010 4310",
+      toAccount: "0018 5002 2719",
+      amount: "999999999",
+      senderRemark: "PW Neg InsufficientFunds",
+      beneficiaryRemark: "PW Neg InsufficientFunds",
+      expectedError: /insufficient|balance|exceed/i,
+    },
+    zeroAmount: {
+      fromAccount: "1018 5010 4310",
+      toAccount: "0018 5002 2719",
+      amount: "0",
+      senderRemark: "PW Neg ZeroAmount",
+      beneficiaryRemark: "PW Neg ZeroAmount",
+      expectedError: /minimum|greater than|amount|valid/i,
+    },
+  },
+
+  intraBankTransfer: {
+    invalidAccount: {
+      fromAccount: "1018 5010 4310",
+      bank: "Sampath",
+      toAccountNumber: "1",             // clearly invalid Sampath account number
+      amount: "100",
+      purpose: "Wages & Salaries",
+      beneficiaryRemark: "PW Neg IntraInvalid",
+      expectedError: /invalid|not valid|account number|not found/i,
+    },
+  },
+
+  otherBankTransfer: {
+    invalidAccount: {
+      fromAccount: "1018 5010 4310",
+      bank: "TEST BANK B",
+      toAccountNumber: "1",             // clearly invalid account number
+      beneficiaryName: "Neg Test",
+      amount: "100",
+      purpose: "Wages & Salaries",
+      beneficiaryRemark: "PW Neg InvalidAccount",
+      expectedError: /invalid|not valid|account number|not found/i,
+    },
+  },
+
+  mobileCash: {
+    invalidMobile: {
+      fromAccount: "1018 5010 4310",
+      mobileNumber: "123",              // too short to be a valid mobile number
+      amount: "1000",
+      remark: "PW Neg MobileCash",
+      expectedError: /invalid|mobile|number|digits/i,
+    },
+  },
+
+  otherCreditCardTransfer: {
+    invalidCard: {
+      fromAccount: "1018 5010 4310",
+      cardNumber: "1234",               // too short / invalid card number
+      beneficiaryName: "Neg Card",
+      amount: "100",
+      beneficiaryRemark: "PW Neg CardInvalid",
+      expectedError: /invalid|card|number|valid/i,
+    },
+  },
+
+  ownCardSettlement: {
+    zeroAmount: {
+      fromAccount: "1018 5010 4310",
+      card: "4321",
+      settlementType: "Other Amount",
+      amount: "0",
+      remark: "PW Neg CardSettleZero",
+      expectedError: /minimum|greater than|amount|valid/i,
+    },
+  },
+
+  billPayment: {
+    // Dialog with a mismatched "Re Enter" reference number.
+    mismatchedReference: {
+      category: "Mobile",
+      biller: "Dialog",
+      fromAccount: "1018 5010 4310",
+      referenceFieldName: "Mobile No",
+      referenceValue: "0771234567",
+      reEnterValue: "0770000000",       // intentionally different
+      amount: "500",
+      expectedError: /match|same|re-?enter|do not/i,
+    },
   },
 };
 
 module.exports = {
   credentials,
   invalidCredentials,
+  forgotPassword,
   ownTransfer,
+  intraBankTransfer,
   otherBankTransfer,
-  billPayment,
-  otherCreditCardTransfer,
   mobileCash,
-  newPayee,
-  savedPayeeTransfer,
-  scheduledTransfer,
-  fixedDeposit,
-  stopCheque,
-  negativeTransfers,
+  otherCreditCardTransfer,
+  ownCardSettlement,
+  stopCard,
+  billPayments,
+  negative,
 };

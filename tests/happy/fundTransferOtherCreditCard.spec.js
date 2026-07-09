@@ -1,16 +1,17 @@
-const { test } = require("../utils/fixtures");
-const { SendMoneyPage } = require("../pages/SendMoneyPage");
-const { OtherCreditCardsPage } = require("../pages/OtherCreditCardsPage");
-const { ConfirmationPopup } = require("../pages/ConfirmationPopup");
-const { credentials, otherCreditCardTransfer } = require("../test-data/testData");
-const { getToastText } = require("../utils/helpers");
+const { test } = require("../../utils/fixtures");
+const { SendMoneyPage } = require("../../pages/SendMoneyPage");
+const { OtherCreditCardsPage } = require("../../pages/OtherCreditCardsPage");
+const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
+const { credentials, otherCreditCardTransfer } = require("../../test-data/testData");
+const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Flow: Login -> Send Money -> Other Credit Cards ->
- *       From Account -> Card Number -> Amount -> One-time -> Submit -> OTP.
+ * Feature: Fund Transfer - Other Bank Credit Card — HAPPY PATH.
+ * Login -> Send Money -> Other Credit Cards -> From -> Card Number -> Amount ->
+ * One-time -> Submit -> OTP -> success.
  */
-test.describe("Other Credit Cards Payment", () => {
-  test("TC_CARD_01 - Login and pay a credit card (One-time)", async ({ page, loggedInDashboard }) => {
+test.describe("Fund Transfer - Other Bank Credit Card - Happy Path", () => {
+  test("TC_FT_OCC_H01 - Pay another bank's credit card (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const cards = new OtherCreditCardsPage(page);
     const popup = new ConfirmationPopup(page);
@@ -48,10 +49,5 @@ test.describe("Other Credit Cards Payment", () => {
     });
   });
 
-  test.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== testInfo.expectedStatus) {
-      const toast = await getToastText(page, 1_500);
-      if (toast) await testInfo.attach("last-toast-message", { body: toast, contentType: "text/plain" });
-    }
-  });
+  test.afterEach(async ({ page }, testInfo) => attachToastOnFailure(page, testInfo));
 });

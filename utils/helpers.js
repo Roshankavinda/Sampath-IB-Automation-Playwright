@@ -149,6 +149,38 @@ async function assertValidationError(page, pattern, timeoutMs = 20_000) {
   });
 }
 
+/**
+ * Negative-transfer helper: after Submit, some validations fire before the OTP
+ * popup and some after. This tolerates an optional OTP prompt, then asserts the
+ * app surfaced the expected error and blocked the transaction.
+ * @param {import('@playwright/test').Page} page
+ * @param {{ otpBoxes: import('@playwright/test').Locator, enterOtpAndConfirm: (otp: string) => Promise<void> }} popup
+ * @param {RegExp} expectedError
+ * @param {string} otp
+ */
+async function submitAndExpectRejection(page, popup, expectedError, otp) {
+  const otpAppeared = await popup.otpBoxes
+    .first()
+    .waitFor({ state: "visible", timeout: 8_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (otpAppeared) await popup.enterOtpAndConfirm(otp);
+  await assertValidationError(page, expectedError);
+}
+
+/**
+ * Shared afterEach helper: on a failing test, capture the app's toast message and
+ * attach it to the report as evidence. Keeps every spec's afterEach a one-liner.
+ * @param {import('@playwright/test').Page} page
+ * @param {import('@playwright/test').TestInfo} testInfo
+ */
+async function attachToastOnFailure(page, testInfo) {
+  if (testInfo.status !== testInfo.expectedStatus) {
+    const toast = await getToastText(page, 1_500);
+    if (toast) await testInfo.attach("last-toast-message", { body: toast, contentType: "text/plain" });
+  }
+}
+
 module.exports = {
   fillOtpBoxes,
   selectOptionByLabelContains,
@@ -158,4 +190,6 @@ module.exports = {
   fillDateField,
   offsetDate,
   assertValidationError,
+  submitAndExpectRejection,
+  attachToastOnFailure,
 };

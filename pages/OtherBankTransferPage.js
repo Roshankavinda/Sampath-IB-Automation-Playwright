@@ -1,7 +1,11 @@
 const { expect } = require("@playwright/test");
 const { selectOptionByLabelContains, selectTransferMode, fillDateField } = require("../utils/helpers");
 
-
+/**
+ * Send Money > Other Accounts form. Used for BOTH:
+ *  - Intra Bank (bank = Sampath): the beneficiary name is auto-fetched (read-only).
+ *  - Other Bank (SLIPS/CEFTS): the beneficiary name is typed manually.
+ */
 class OtherBankTransferPage {
   /** @param {import('@playwright/test').Page} page */
   constructor(page) {
@@ -56,14 +60,35 @@ class OtherBankTransferPage {
     );
   }
 
+  /**
+   * Intra-bank (Sampath): enter the beneficiary account number and let the app
+   * auto-fetch the name. ASSERTION: the name field becomes populated and read-only.
+   */
+  async enterIntraBankAccount(accountNumber) {
+    await this.toAccountNumberInput.click();
+    await this.toAccountNumberInput.fill(accountNumber);
+    // The name is fetched from the core banking system for Sampath accounts.
+    await expect
+      .poll(async () => (await this.beneficiaryNameInput.inputValue().catch(() => "")).trim().length, {
+        timeout: 20_000,
+        message: "Beneficiary name should auto-fetch for a Sampath (intra-bank) account",
+      })
+      .toBeGreaterThan(0);
+  }
+
   async fillAmountAndDetails(data) {
-  await this.amountInput.fill(data.amount);
-  await selectOptionByLabelContains(this.purposeSelect, data.purpose);
-  await this.beneficiaryRemarkInput.fill(data.beneficiaryRemark);
-  await expect(this.amountInput, "Amount field should contain the entered amount").toHaveValue(
-    new RegExp(data.amount)
-  );
-}
+    await this.amountInput.fill(data.amount);
+    // Purpose is not always shown for intra-bank transfers - fill it only if present.
+    if (data.purpose && (await this.purposeSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.purposeSelect, data.purpose);
+    }
+    if (data.beneficiaryRemark && (await this.beneficiaryRemarkInput.isVisible().catch(() => false))) {
+      await this.beneficiaryRemarkInput.fill(data.beneficiaryRemark);
+    }
+    await expect(this.amountInput, "Amount field should contain the entered amount").toHaveValue(
+      new RegExp(data.amount)
+    );
+  }
 
   async ensureOneTimeTransaction() {
     const oneTime = this.transferModeRadios.first();

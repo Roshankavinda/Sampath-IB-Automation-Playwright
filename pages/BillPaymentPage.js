@@ -96,6 +96,22 @@ class BillPaymentPage {
     }
   }
 
+  /**
+   * Fills the reference field and its "Re Enter" twin with DIFFERENT values, to
+   * exercise the "numbers must match" validation. Returns true if a second
+   * (re-enter) field exists to mismatch; false if the biller has only one field.
+   */
+  async fillMismatchedReference(fieldName, value, reEnterValue) {
+    const inputs = this.page.getByPlaceholder(fieldName, { exact: false });
+    await expect(inputs.first(), `Reference field "${fieldName}" should be visible`).toBeVisible({ timeout: 20_000 });
+    await inputs.first().fill(value);
+    if ((await inputs.count()) > 1) {
+      await inputs.nth(1).fill(reEnterValue);
+      return true;
+    }
+    return false;
+  }
+
   /** Amount may be fixed by the biller; fill it only when the input is editable. */
   async fillAmountIfEditable(amount) {
     if (await this.amountInput.isVisible().catch(() => false)) {
