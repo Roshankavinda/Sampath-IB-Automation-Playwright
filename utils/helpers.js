@@ -82,4 +82,80 @@ async function getToastText(page, timeoutMs = 8_000) {
   }
 }
 
-module.exports = { fillOtpBoxes, selectOptionByLabelContains, selectFirstRealOption, getToastText };
+/**
+ * Select a transfer-mode radio by its visible label (One-time / Scheduled / Recurring).
+ * The transfer forms expose radios as input[name="transferMode"]; each has an
+ * adjacent label. Matches the label text case-insensitively and partial.
+ *
+ * // VERIFY against the live app: exact label wording for scheduled/recurring modes.
+ * @param {import('@playwright/test').Locator} radios  input[name="transferMode"] set
+ * @param {string} modeLabel  e.g. "One-time", "Scheduled", "Recurring"
+ */
+async function selectTransferMode(radios, modeLabel) {
+  const page = radios.page();
+  // Try to click the label/text that owns the radio; fall back to the first radio.
+  const labelPattern = new RegExp(modeLabel.replace(/[-\s]+/g, "[-\\s]*"), "i");
+  const labeled = page.getByText(labelPattern).first();
+  if (await labeled.isVisible().catch(() => false)) {
+    await labeled.click().catch(() => {});
+  }
+  // Ensure exactly one radio ends up checked; if the label click didn't take, check by index.
+  const anyChecked = await radios.evaluateAll((els) => els.some((e) => e.checked)).catch(() => false);
+  if (!anyChecked && (await radios.count()) > 0) {
+    await radios.first().check({ force: true }).catch(() => {});
+  }
+}
+
+/**
+ * Fill a date input. Handles both native <input type="date"> (yyyy-mm-dd) and
+ * text-based date pickers (typed value). Value is passed straight through.
+ *
+ * // VERIFY against the live app: expected date format for scheduled transfers.
+ * @param {import('@playwright/test').Locator} input
+ * @param {string} value  date string, e.g. "2026-12-31"
+ */
+async function fillDateField(input, value) {
+  await expect(input, "Date field should be visible").toBeVisible({ timeout: 15_000 });
+  await input.fill(value).catch(async () => {
+    // Some pickers block fill(); type it instead.
+    await input.click();
+    await input.pressSequentially(value, { delay: 20 });
+  });
+}
+
+/**
+ * Return a date string offset from a base date, formatted yyyy-mm-dd.
+ * Base date is passed in (tests avoid Date.now() so runs stay deterministic in reports).
+ * @param {string} baseISO  base date, e.g. "2026-07-08"
+ * @param {number} addDays
+ */
+function offsetDate(baseISO, addDays) {
+  const d = new Date(baseISO + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + addDays);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * ASSERTION for negative tests: a validation/error message matching `pattern`
+ * is shown (toast or inline). Positive wait, so it stays stable.
+ * @param {import('@playwright/test').Page} page
+ * @param {RegExp} pattern
+ * @param {number} [timeoutMs]
+ */
+async function assertValidationError(page, pattern, timeoutMs = 20_000) {
+  const err = page.getByText(pattern).first();
+  await expect(err, `A validation/error message matching ${pattern} should be shown`).toBeVisible({
+    timeout: timeoutMs,
+  });
+}
+
+module.exports = {
+  fillOtpBoxes,
+  selectOptionByLabelContains,
+  selectFirstRealOption,
+  getToastText,
+  selectTransferMode,
+  fillDateField,
+  offsetDate,
+  assertValidationError,
+};

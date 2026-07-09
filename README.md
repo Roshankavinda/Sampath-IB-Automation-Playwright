@@ -6,13 +6,31 @@ Navigation is done by **clicking through the UI** (only the login page is opened
 
 ## Automated flows
 
-| Test ID | Flow |
-|---------|------|
-| TC_LOGIN_01 | Valid login → dashboard |
-| TC_LOGIN_02 | Invalid login → failure message |
-| **TC_OWN_01** | **Login → Own Fund Transfer** (One-time) |
-| **TC_OTHER_01** | **Login → Other Bank Transfer** (One-time) |
-| **TC_BILL_01** | **Login → Bill Payment** (One-time) |
+| Test ID | Flow | Type |
+|---------|------|------|
+| TC_LOGIN_01 | Valid login → dashboard | happy |
+| TC_LOGIN_02 | Invalid login → failure message | negative |
+| TC_OWN_01 | Login → Own Fund Transfer (One-time) | happy |
+| TC_OTHER_01 | Login → Other Bank Transfer (One-time) | happy |
+| TC_BILL_01 | Login → Bill Payment (One-time) | happy |
+| **TC_CARD_01** | **Login → Send Money → Other Credit Cards** (One-time) | happy |
+| **TC_MCASH_01** | **Login → Send Money → Mobile Cash** (One-time) | happy |
+| **TC_PAYEE_01** | **Login → Payees & Billers → Add Payee** | happy |
+| **TC_SAVED_01** | **Login → Send Money → Saved Payees → transfer** (One-time) | happy |
+| **TC_SCHED_01** | **Login → Own Transfer → Scheduled (future-dated)** | happy |
+| **TC_SCHED_02** | **Login → Own Transfer → Recurring (frequency + end date)** | happy |
+| **TC_FD_01** | **Login → Quick Actions → Fixed Deposit** (open FD) | happy |
+| **TC_STOPCHQ_01** | **Login → Quick Actions → Stop Cheque** | happy |
+| **TC_NEG_01** | **Own transfer above available balance → rejected** | negative |
+| **TC_NEG_02** | **Other-bank transfer to invalid account → rejected** | negative |
+| **TC_NEG_03** | **Own transfer with zero/below-min amount → blocked** | negative |
+| **TC_NEG_04** | **Empty transfer form → Submit stays disabled** | negative |
+
+> ⚠️ **Selectors in the new flows are inferred from the existing patterns, not from the live DOM.**
+> Every place that needs confirming against the real UAT app is marked with a `// VERIFY`
+> comment in the page object, or an inline note in `test-data/testData.js`. Run each new
+> flow once in `--headed --slowmo` and adjust the flagged `name`/label values as needed.
+> The confirmed flows (login, own/other transfer, bill payment) are untouched.
 
 ## Project structure
 
@@ -25,19 +43,35 @@ sampath-ib-automation/
 │   └── testData.js             # ★ EDIT HERE: accounts, banks, billers, amounts
 ├── pages/                      # Page Objects (one per screen)
 │   ├── LoginPage.js
-│   ├── DashboardPage.js        # Quick Actions navigation (click-based)
+│   ├── DashboardPage.js        # Quick Actions + top-nav navigation (click-based)
 │   ├── SendMoneyPage.js        # shared Send Money tabs + heading assertion
-│   ├── OwnAccountPage.js
-│   ├── OtherBankTransferPage.js
+│   ├── OwnAccountPage.js        # + scheduled/recurring transfer mode
+│   ├── OtherBankTransferPage.js # + scheduled/recurring transfer mode
+│   ├── OtherCreditCardsPage.js  # Send Money → Other Credit Cards
+│   ├── MobileCashPage.js        # Send Money → Mobile Cash
+│   ├── SavedPayeesPage.js       # Send Money → Saved Payees → transfer
+│   ├── PayeesBillersPage.js     # Payees & Billers → add payee
+│   ├── ManageSchedulesPage.js   # verify a scheduled/recurring transfer
+│   ├── FixedDepositPage.js      # Quick Actions → Fixed Deposit
+│   ├── StopChequePage.js        # Quick Actions → Stop Cheque
 │   ├── BillPaymentPage.js
-│   └── ConfirmationPopup.js    # transaction OTP + success
+│   └── ConfirmationPopup.js    # transaction OTP + success (shared)
 ├── tests/                      # Specs (one flow per file)
 │   ├── login.spec.js
 │   ├── ownFundTransfer.spec.js
 │   ├── otherBankTransfer.spec.js
-│   └── billPayment.spec.js
+│   ├── billPayment.spec.js
+│   ├── otherCreditCards.spec.js
+│   ├── mobileCash.spec.js
+│   ├── payeesBillers.spec.js
+│   ├── savedPayeesTransfer.spec.js
+│   ├── scheduledTransfer.spec.js
+│   ├── fixedDeposit.spec.js
+│   ├── stopCheque.spec.js
+│   └── negativeTransfers.spec.js
 └── utils/
-    ├── helpers.js              # OTP filler, dropdown-by-label, toast capture
+    ├── helpers.js              # OTP filler, dropdown-by-label, transfer-mode/date,
+    │                           # validation-error assert, toast capture
     └── fixtures.js             # "loggedInDashboard" fixture (shared login)
 ```
 
@@ -92,6 +126,14 @@ npm run test:login        # login only
 npm run test:own          # Login → Own Fund Transfer
 npm run test:otherbank    # Login → Other Bank Transfer
 npm run test:billpay      # Login → Bill Payment
+npm run test:cards        # Login → Other Credit Cards
+npm run test:mobilecash   # Login → Mobile Cash
+npm run test:payees       # Login → Payees & Billers → Add Payee
+npm run test:savedpayee   # Login → Saved Payees transfer (run test:payees first)
+npm run test:scheduled    # Login → Scheduled + Recurring own transfer
+npm run test:fd           # Login → Fixed Deposit
+npm run test:stopcheque   # Login → Stop Cheque
+npm run test:negative     # Negative / validation cases
 ```
 
 Run a single test by title:

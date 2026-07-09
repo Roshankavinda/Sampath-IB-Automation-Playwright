@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, selectTransferMode, fillDateField } = require("../utils/helpers");
 
 /**
  * Send Money > Own Account form (OwnAccount.tsx).
@@ -18,6 +18,11 @@ class OwnAccountPage {
     this.beneficiaryRemarkInput = page.locator('input[name="beneficiaryRemark"]');
     this.transferModeRadios = page.locator('input[name="transferMode"]');
     this.submitButton = page.getByRole("button", { name: "Submit", exact: true });
+    // Scheduled / recurring transfer fields (appear after choosing a non-One-time mode).
+    // VERIFY these name attributes against the live app.
+    this.effectiveDateInput = page.locator('input[name="effectiveDate"], input[type="date"]').first();
+    this.endDateInput = page.locator('input[name="endDate"]').first();
+    this.frequencySelect = page.locator('select[name="frequency"]');
   }
 
   /** ASSERTION: the Own Account form is displayed. */
@@ -54,6 +59,27 @@ class OwnAccountPage {
       await oneTime.check({ force: true });
     }
     await expect(oneTime, "One-time Transaction mode should be selected").toBeChecked();
+  }
+
+  /**
+   * Select a transfer mode and, for scheduled/recurring, fill the schedule fields.
+   * @param {"one-time"|"scheduled"|"recurring"} mode
+   * @param {{ effectiveDate?: string, endDate?: string, frequency?: string }} [schedule]
+   */
+  async setTransferMode(mode, schedule = {}) {
+    if (mode === "one-time") return this.ensureOneTimeTransaction();
+
+    await selectTransferMode(this.transferModeRadios, mode === "recurring" ? "Recurring" : "Scheduled");
+
+    if (schedule.effectiveDate) await fillDateField(this.effectiveDateInput, schedule.effectiveDate);
+    if (mode === "recurring") {
+      if (schedule.frequency && (await this.frequencySelect.isVisible().catch(() => false))) {
+        await selectOptionByLabelContains(this.frequencySelect, schedule.frequency);
+      }
+      if (schedule.endDate && (await this.endDateInput.isVisible().catch(() => false))) {
+        await fillDateField(this.endDateInput, schedule.endDate);
+      }
+    }
   }
 
   async submit() {

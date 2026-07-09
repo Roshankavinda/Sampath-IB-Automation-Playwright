@@ -17,6 +17,9 @@ class DashboardPage {
     this.dashboardNav = page.getByRole("button", { name: "Dashboard", exact: true });
     this.quickActions = page.getByText("Quick Actions", { exact: true }).first();
     this.myAccountsNav = page.getByRole("button", { name: "My Accounts", exact: true });
+    // Top-nav items (not inside the Quick Actions dropdown).
+    this.manageSchedulesNav = page.getByText("Manage Schedules", { exact: true }).first();
+    this.payeesBillersNav = page.getByText("Payees & Billers", { exact: true }).first();
   }
 
   /** ASSERTION: the dashboard/top navigation is loaded after login. */
@@ -41,6 +44,41 @@ class DashboardPage {
 
   async goToBillPayment() {
     await this.openQuickAction("Bill Payment");
+  }
+
+  async goToFixedDeposit() {
+    await this.openQuickAction("Fixed Deposit");
+  }
+
+  async goToStopCheque() {
+    await this.openQuickAction("Stop Cheque");
+  }
+
+  async goToStopCard() {
+    await this.openQuickAction("Stop Card");
+  }
+
+  async goToWebCard() {
+    await this.openQuickAction("Web Card");
+  }
+
+  async goToFreezeAccounts() {
+    await this.openQuickAction("Freeze Accounts");
+  }
+
+  /** Clicks a top-nav item by its visible text (outside the Quick Actions dropdown). */
+  async openTopNav(itemName) {
+    const item = this.page.getByText(itemName, { exact: true }).first();
+    await expect(item, `Top-nav item "${itemName}" should be visible`).toBeVisible({ timeout: 60_000 });
+    await item.click();
+  }
+
+  async goToManageSchedules() {
+    await this.openTopNav("Manage Schedules");
+  }
+
+  async goToPayeesAndBillers() {
+    await this.openTopNav("Payees & Billers");
   }
 }
 
