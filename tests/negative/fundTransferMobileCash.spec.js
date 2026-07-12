@@ -3,7 +3,7 @@ const { SendMoneyPage } = require("../../pages/SendMoneyPage");
 const { MobileCashPage } = require("../../pages/MobileCashPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
 const { credentials, negative } = require("../../test-data/testData");
-const { attachToastOnFailure, submitAndExpectRejection, selectOptionByLabelContains } = require("../../utils/helpers");
+const { attachToastOnFailure, submitAndExpectRejection } = require("../../utils/helpers");
 
 /**
  * Feature: Fund Transfer - Mobile Cash — NEGATIVE / VALIDATION.
@@ -23,14 +23,8 @@ test.describe("Fund Transfer - Mobile Cash - Negative & Validation", () => {
       await mobile.assertLoaded();
     });
 
-    await test.step("Enter a too-short mobile number", async () => {
-      await selectOptionByLabelContains(mobile.fromAccountSelect, data.fromAccount);
-      await mobile.mobileNumberInput.click();
-      await mobile.mobileNumberInput.fill(data.mobileNumber);
-      if (await mobile.amountInput.isEditable().catch(() => false)) {
-        await mobile.amountInput.fill(data.amount);
-      }
-      await mobile.ensureOneTimeTransaction();
+    await test.step("Fill the form with a too-short mobile number", async () => {
+      await mobile.fillForm(data);
     });
 
     await test.step("Assert the app rejects it or keeps Submit disabled", async () => {

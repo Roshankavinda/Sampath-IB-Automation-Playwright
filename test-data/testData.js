@@ -89,9 +89,12 @@ const otherBankTransfer = {
  * 6. Fund Transfer - Mobile Cash (cardless cash to a mobile number)
  * ---------------------------------------------------------------- */
 const mobileCash = {
-  fromAccount: "1018 5010 4310",
-  mobileNumber: "0771234567",       // VERIFY: recipient mobile number field
-  amount: "1000",                   // Mobile Cash often has fixed denominations
+  // From Account is a display card defaulted to your primary account (nothing to pick).
+  nic: "199012345678",              // EDIT: receiver's NIC without V/X (9 or 12 digits)
+  mobileNumber: "0771234567",       // receiver's mobile number
+  receiverName: "PW Receiver",      // receiver's name
+  purpose: "Family Remittances",    // Purpose*
+  amount: "1000",
   remark: "PW Mobile Cash",
 };
 
@@ -99,10 +102,13 @@ const mobileCash = {
  * 7. Fund Transfer - Other Bank Credit Card (pay another bank's card)
  * ---------------------------------------------------------------- */
 const otherCreditCardTransfer = {
-  fromAccount: "1018 5010 4310",
-  cardNumber: "376657973920377",   // VERIFY: beneficiary credit card number field
-  beneficiaryName: "Card Holder",   // typed manually
+  fromAccount: "1018 5010 4310",    // From Account loads async (skeleton), defaults to primary
+  bank: "Nations Trust",            // card-issuing bank (matches "NATIONS TRUST BANK")
+  cardNumber: "376657973920377",   // input[name="CAN"] - beneficiary credit card number / CAN
+  cardName: "Card Holder",          // input[name="cardName"] - name on card
   amount: "100",
+  purpose: "Wages & Salaries",      // select[name="purposeofTransfer"]
+  senderRemark: "PW Credit Card",
   beneficiaryRemark: "PW Credit Card",
 };
 
@@ -110,11 +116,11 @@ const otherCreditCardTransfer = {
  * 8. Own Card Settlement (settle your OWN Sampath credit card)
  * ---------------------------------------------------------------- */
 const ownCardSettlement = {
-  fromAccount: "1018 5010 4310",
-  card: "4321",                     // VERIFY: part of your own card number/label in the card dropdown
-  settlementType: "Minimum",        // VERIFY: Minimum / Total Outstanding / Other Amount option label
-  amount: "500",                    // used only when settlementType is "Other Amount"
-  remark: "PW Own Card Settlement",
+  // Flow: My Accounts > Credit Cards > select card > Settle > "Make payments to this card".
+  card: "1071",                     // part of the card number shown on the card (5471 65XX XXXX 1071)
+  fromAccount: "1018 5010 4310",    // funding account (select[name="account"] option)
+  settlementType: "Minimum Payment", // "Last Statement O/S" | "Minimum Payment" | "Custom Amount"
+  amount: "500",                    // used only when settlementType is "Custom Amount"
 };
 
 /* ----------------------------------------------------------------
@@ -212,8 +218,10 @@ const negative = {
 
   mobileCash: {
     invalidMobile: {
-      fromAccount: "1018 5010 4310",
+      nic: "199012345678",
       mobileNumber: "123",              // too short to be a valid mobile number
+      receiverName: "PW Neg Receiver",
+      purpose: "Family Remittances",
       amount: "1000",
       remark: "PW Neg MobileCash",
       expectedError: /invalid|mobile|number|digits/i,
@@ -234,10 +242,9 @@ const negative = {
   ownCardSettlement: {
     zeroAmount: {
       fromAccount: "1018 5010 4310",
-      card: "4321",
-      settlementType: "Other Amount",
+      card: "1071",
+      settlementType: "Custom Amount",
       amount: "0",
-      remark: "PW Neg CardSettleZero",
       expectedError: /minimum|greater than|amount|valid/i,
     },
   },

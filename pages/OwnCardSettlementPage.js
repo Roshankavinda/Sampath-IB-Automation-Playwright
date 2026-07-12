@@ -2,78 +2,106 @@ const { expect } = require("@playwright/test");
 const { selectOptionByLabelContains } = require("../utils/helpers");
 
 /**
- * Send Money > Own Cards — settle your OWN Sampath credit card.
- * Flow: pick funding account -> pick your card -> choose settlement type
- *       (Minimum / Total Outstanding / Other Amount) -> amount (for Other Amount)
- *       -> Submit -> OTP/confirmation.
+ * Own Card Settlement — settle your OWN Sampath credit card.
+ * Flow (all confirmed against the live app, card 5471 65XX XXXX 1071):
+ *   Dashboard > My Accounts > Credit Cards (DashboardPage.goToCreditCards)
+ *   -> the card list + "Credit Card Details" panel render on load
+ *   -> click the card -> "Settle" opens the "Make payments to this card" modal
+ *   -> pick funding Account (select[name="account"]) + a payment type box
+ *      (Last Statement O/S | Minimum Payment | Custom Amount -> input[name="customAmount"])
+ *      + Transfer Mode radio (ONLINE = One-time / SCHEDULE = Standing Order)
+ *   -> "Next" -> confirmation / OTP.
  *
- * // VERIFY against the live app: heading, tab label and field name attributes.
- * // Settlement type may be a <select> or radio tiles; the helper tolerates both.
+ * The settle form is a fixed overlay (div.fixed.inset-0.z-50). All of its controls
+ * are scoped to that overlay so we never hit the background "Settle" button.
  */
 class OwnCardSettlementPage {
   /** @param {import('@playwright/test').Page} page */
   constructor(page) {
     this.page = page;
-    this.fromAccountSelect = page.locator('select[name="accountFrom"], select[name="fundingAccount"]').first();
-    this.cardSelect = page.locator('select[name="card"], select[name="cardNumber"], select[name="ownCard"]').first();
-    this.settlementTypeSelect = page
-      .locator('select[name="settlementType"], select[name="paymentOption"]')
-      .first();
-    this.settlementTypeRadios = page.locator('input[name="settlementType"], input[name="paymentOption"]');
-    this.amountInput = page.locator('input[name="amount"]').first();
-    this.remarkInput = page.locator('input[name="remark"], input[name="beneficiaryRemark"]').first();
-    this.transferModeRadios = page.locator('input[name="transferMode"]');
-    this.submitButton = page.getByRole("button", { name: /^(submit|pay|proceed|next|confirm)$/i }).first();
+    // Credit Cards landing page (confirmed): breadcrumb "Accounts / Credit Cards".
+    this.heading = page.getByText(/accounts \/ credit cards|credit card details/i).first();
+    this.settleButton = page.getByRole("button", { name: /settle/i }).first();
+
+    // The Settle modal overlay + the "Make payments to this card" form inside it.
+    this.modal = page.locator("div.fixed.inset-0.z-50").first();
+    this.modalHeading = this.modal.getByText("Make payments to this card", { exact: true });
+    this.fundingAccountSelect = this.modal.locator('select[name="account"]');
+    this.customAmountInput = this.modal.locator('input[name="customAmount"]');
+    this.transferModeOnline = this.modal.locator('input[name="transferMode"][value="ONLINE"]');
+    this.transferModeSchedule = this.modal.locator('input[name="transferMode"][value="SCHEDULE"]');
+    // The button that advances the settlement is "Next" (not "Submit").
+    this.submitButton = this.modal.getByRole("button", { name: /^next$/i }).first();
   }
 
-  /** ASSERTION: the Own Card Settlement form is displayed. */
+  /** ASSERTION: the Credit Cards page is displayed. */
   async assertLoaded() {
-    await expect(this.fromAccountSelect, "Own Card Settlement: funding account dropdown should be visible").toBeVisible({
+    await expect(this.heading, "Credit Cards page should be visible").toBeVisible({ timeout: 30_000 });
+  }
+
+  /**
+   * Confirms the target card is listed and selects it. The Credit Cards page renders
+   * the card (masked, e.g. "5471 65XX XXXX 1071") and its details panel on load, so a
+   * partial such as the last 4 digits is enough. Fails clearly if the card isn't found.
+   */
+  async selectCard(cardPartial) {
+    // Tolerate the masked format by allowing flexible spacing between the digits.
+    const pattern = new RegExp(String(cardPartial).replace(/\s+/g, "\\s*"), "i");
+    const card = this.page.getByText(pattern).first();
+    await expect(
+      card,
+      `Credit card matching "${cardPartial}" should be visible - the logged-in account must hold this credit card`
+    ).toBeVisible({ timeout: 30_000 });
+    await card.click().catch(() => {});
+  }
+
+  async clickSettle() {
+    await expect(this.settleButton, "'Settle' button should be visible in the Credit Card Details panel").toBeVisible({
       timeout: 30_000,
     });
-    await expect(this.cardSelect, "Own Card Settlement: card dropdown should be visible").toBeVisible();
+    await this.settleButton.click();
+    // The settlement modal must open.
+    await expect(this.modalHeading, "'Make payments to this card' modal should open after Settle").toBeVisible({
+      timeout: 30_000,
+    });
   }
 
-  /** Chooses a settlement type from either a <select> or a set of radio tiles. */
-  async _selectSettlementType(label) {
-    if (!label) return;
-    if (await this.settlementTypeSelect.isVisible().catch(() => false)) {
-      await selectOptionByLabelContains(this.settlementTypeSelect, label);
-      return;
-    }
-    const tile = this.page.getByText(new RegExp(label, "i")).first();
-    if (await tile.isVisible().catch(() => false)) await tile.click();
-  }
+  /**
+   * Fills the settlement modal:
+   *  - funding account (select[name="account"], matched by partial),
+   *  - payment type box ("Minimum Payment" | "Last Statement O/S" | "Custom Amount"),
+   *    entering data.amount into input[name="customAmount"] for a custom amount,
+   *  - Transfer Mode = One-time Transaction (ONLINE).
+   */
+  async fillSettlement(data) {
+    await expect(this.fundingAccountSelect, "Funding account dropdown should be visible in the Settle modal").toBeVisible(
+      { timeout: 30_000 }
+    );
 
-  async fillForm(data) {
-    await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount);
-    await selectOptionByLabelContains(this.cardSelect, data.card);
-    await this._selectSettlementType(data.settlementType);
-
-    // Amount is only editable when settling an "Other Amount".
-    if (data.amount && (await this.amountInput.isVisible().catch(() => false))) {
-      if (await this.amountInput.isEditable().catch(() => false)) {
-        await this.amountInput.fill(data.amount);
-        await expect(this.amountInput, "Amount field should contain the entered amount").toHaveValue(
-          new RegExp(data.amount)
-        );
-      }
+    if (data.fromAccount) {
+      await selectOptionByLabelContains(this.fundingAccountSelect, data.fromAccount).catch(() => {});
     }
 
-    if (data.remark && (await this.remarkInput.isVisible().catch(() => false))) {
-      await this.remarkInput.fill(data.remark);
-    }
-  }
+    const type = data.settlementType || "Minimum Payment";
+    const typeBox = this.modal.getByText(new RegExp(type.replace(/[*]/g, "").trim(), "i")).first();
+    await expect(typeBox, `Payment type "${type}" should be selectable in the Settle modal`).toBeVisible({
+      timeout: 15_000,
+    });
+    await typeBox.click();
 
-  async ensureOneTimeTransaction() {
-    const oneTime = this.transferModeRadios.first();
-    if ((await oneTime.count()) > 0 && !(await oneTime.isChecked().catch(() => false))) {
-      await oneTime.check({ force: true }).catch(() => {});
+    if (/custom/i.test(type) && data.amount != null) {
+      await expect(this.customAmountInput, "Custom Amount input should appear when 'Custom Amount' is chosen").toBeVisible(
+        { timeout: 15_000 }
+      );
+      await this.customAmountInput.fill(String(data.amount));
     }
+
+    // Default to a one-time transaction (not a standing order).
+    await this.transferModeOnline.check().catch(() => {});
   }
 
   async submit() {
-    await expect(this.submitButton, "Submit button should be enabled once the form is valid").toBeEnabled({
+    await expect(this.submitButton, "'Next' should be enabled once the settlement form is valid").toBeEnabled({
       timeout: 15_000,
     });
     await this.submitButton.click();

@@ -1,5 +1,4 @@
 const { test, expect } = require("../../utils/fixtures");
-const { SendMoneyPage } = require("../../pages/SendMoneyPage");
 const { OwnCardSettlementPage } = require("../../pages/OwnCardSettlementPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
 const { credentials, negative } = require("../../test-data/testData");
@@ -11,21 +10,19 @@ const { attachToastOnFailure, submitAndExpectRejection } = require("../../utils/
  */
 test.describe("Own Card Settlement - Negative & Validation", () => {
   test("TC_OCS_N01 - Zero settlement amount is blocked", async ({ page, loggedInDashboard }) => {
-    const sendMoney = new SendMoneyPage(page);
     const settle = new OwnCardSettlementPage(page);
     const popup = new ConfirmationPopup(page);
     const data = negative.ownCardSettlement.zeroAmount;
 
-    await test.step("Open Send Money > Own Cards", async () => {
-      await loggedInDashboard.goToSendMoney();
-      await sendMoney.assertLoaded();
-      await sendMoney.selectOwnCardsTab();
+    await test.step("Navigate to My Accounts > Credit Cards and open Settle", async () => {
+      await loggedInDashboard.goToCreditCards();
       await settle.assertLoaded();
+      await settle.selectCard(data.card);
+      await settle.clickSettle();
     });
 
     await test.step("Choose 'Other Amount' and enter zero", async () => {
-      await settle.fillForm(data);
-      await settle.ensureOneTimeTransaction();
+      await settle.fillSettlement(data);
     });
 
     await test.step("Assert the app rejects it or keeps Submit disabled", async () => {

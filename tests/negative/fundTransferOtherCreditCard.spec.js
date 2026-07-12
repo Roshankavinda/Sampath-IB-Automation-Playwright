@@ -3,7 +3,7 @@ const { SendMoneyPage } = require("../../pages/SendMoneyPage");
 const { OtherCreditCardsPage } = require("../../pages/OtherCreditCardsPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
 const { credentials, negative } = require("../../test-data/testData");
-const { attachToastOnFailure, submitAndExpectRejection, selectOptionByLabelContains } = require("../../utils/helpers");
+const { attachToastOnFailure, submitAndExpectRejection } = require("../../utils/helpers");
 
 /**
  * Feature: Fund Transfer - Other Bank Credit Card — NEGATIVE / VALIDATION.
@@ -24,9 +24,8 @@ test.describe("Fund Transfer - Other Bank Credit Card - Negative & Validation", 
     });
 
     await test.step("Enter a too-short card number", async () => {
-      await selectOptionByLabelContains(cards.fromAccountSelect, data.fromAccount);
-      await cards.cardNumberInput.click();
       await cards.cardNumberInput.fill(data.cardNumber);
+      await cards.reCardNumberInput.fill(data.cardNumber);
       await cards.amountInput.fill(data.amount);
       await cards.ensureOneTimeTransaction();
     });

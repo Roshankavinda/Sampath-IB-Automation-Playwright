@@ -1,50 +1,69 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains, selectTransferMode, fillDateField } = require("../utils/helpers");
+const { selectOptionByLabelContains } = require("../utils/helpers");
 
 /**
- * Send Money > Other Credit Cards form.
- * Pay a credit card (own or other-bank card) by entering the card number and amount.
- *
- * // VERIFY against the live app: the field name attributes below. They mirror the
- * // Own/Other Bank forms (accountFrom, amount, transferMode, Submit); the card
- * // number field name is a best-guess and should be confirmed from the app source.
+ * Send Money > Other Credit Cards — pay another bank's credit card by card number/CAN.
+ * Real fields (confirmed against the live app):
+ *   From Account  - loads asynchronously (skeleton), defaults to the primary account
+ *   input[name="CAN"]                - beneficiary credit card number / CAN
+ *   input[name="reCAN"]              - re-enter credit card number / CAN
+ *   input[name="cardName"]           - receiver's account name
+ *   input[name="amount"]             - Amount
+ *   select[name="purposeofTransfer"] - Purpose
+ *   input[name="senderRemark"]       - Sender Remark
+ *   input[name="beneficiaryRemark"]  - Beneficiary Remark
+ *   input[name="transferMode"]       - One-time / Standing Order radios
  */
 class OtherCreditCardsPage {
   /** @param {import('@playwright/test').Page} page */
   constructor(page) {
     this.page = page;
     this.fromAccountSelect = page.locator('select[name="accountFrom"]');
-    this.cardNumberInput = page
-      .locator('input[name="cardNumber"], input[name="creditCardNumber"], input[name="toCardNumber"]')
-      .first();
-    this.beneficiaryNameInput = page.locator('input[name="accountName"], input[name="beneficiaryName"]').first();
+    this.cardNumberInput = page.locator('input[name="CAN"]');
+    this.reCardNumberInput = page.locator('input[name="reCAN"]');
+    this.cardNameInput = page.locator('input[name="cardName"]');
+    this.bankSelect = page.locator('select[name="bank"]'); // card-issuing bank (required)
     this.amountInput = page.locator('input[name="amount"]');
+    this.purposeSelect = page.locator('select[name="purposeofTransfer"]');
+    this.senderRemarkInput = page.locator('input[name="senderRemark"]');
     this.beneficiaryRemarkInput = page.locator('input[name="beneficiaryRemark"]');
     this.transferModeRadios = page.locator('input[name="transferMode"]');
-    this.effectiveDateInput = page.locator('input[name="effectiveDate"], input[type="date"]').first();
     this.submitButton = page.getByRole("button", { name: "Submit", exact: true });
   }
 
   /** ASSERTION: the Other Credit Cards form is displayed. */
   async assertLoaded() {
-    await expect(this.fromAccountSelect, "Other Credit Cards form: From Account dropdown should be visible").toBeVisible({
+    await expect(this.cardNumberInput, "Other Credit Cards form: Card Number (CAN) field should be visible").toBeVisible({
       timeout: 30_000,
     });
-    await expect(this.cardNumberInput, "Other Credit Cards form: Card Number field should be visible").toBeVisible();
     await expect(this.amountInput, "Other Credit Cards form: Amount field should be visible").toBeVisible();
+    // From Account loads asynchronously (skeleton loader); wait for it to resolve.
+    await this.page
+      .waitForFunction(() => {
+        const f = document.querySelector("form");
+        return f && !f.querySelector(".animate-pulse");
+      }, null, { timeout: 20_000 })
+      .catch(() => {});
   }
 
   async fillForm(data) {
-    await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount);
-
-    await this.cardNumberInput.click();
-    await this.cardNumberInput.fill(data.cardNumber);
-
-    if (data.beneficiaryName && (await this.beneficiaryNameInput.isEditable().catch(() => false))) {
-      await this.beneficiaryNameInput.fill(data.beneficiaryName);
+    // From Account defaults to primary once loaded; select a specific one only if present.
+    if (data.fromAccount && (await this.fromAccountSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount).catch(() => {});
     }
 
+    await this.cardNumberInput.fill(data.cardNumber);
+    await this.reCardNumberInput.fill(data.cardNumber);
+    if (data.cardName) await this.cardNameInput.fill(data.cardName);
+    // The card-issuing bank is required (defaults to "Select Bank").
+    if (data.bank) await selectOptionByLabelContains(this.bankSelect, data.bank);
     await this.amountInput.fill(data.amount);
+    if (data.purpose && (await this.purposeSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.purposeSelect, data.purpose);
+    }
+    if (data.senderRemark && (await this.senderRemarkInput.isVisible().catch(() => false))) {
+      await this.senderRemarkInput.fill(data.senderRemark);
+    }
     if (data.beneficiaryRemark && (await this.beneficiaryRemarkInput.isVisible().catch(() => false))) {
       await this.beneficiaryRemarkInput.fill(data.beneficiaryRemark);
     }
@@ -53,7 +72,7 @@ class OtherCreditCardsPage {
     await expect(this.amountInput, "Amount field should contain the entered amount").toHaveValue(
       new RegExp(data.amount)
     );
-    await expect(this.cardNumberInput, "Card number field should hold the entered value").toHaveValue(
+    await expect(this.cardNumberInput, "Card number should hold the entered value").toHaveValue(
       new RegExp(data.cardNumber.slice(-4))
     );
   }
@@ -63,13 +82,6 @@ class OtherCreditCardsPage {
     if ((await oneTime.count()) > 0 && !(await oneTime.isChecked().catch(() => false))) {
       await oneTime.check({ force: true }).catch(() => {});
     }
-  }
-
-  /** @param {"one-time"|"scheduled"} mode */
-  async setTransferMode(mode, schedule = {}) {
-    if (mode === "one-time") return this.ensureOneTimeTransaction();
-    await selectTransferMode(this.transferModeRadios, "Scheduled");
-    if (schedule.effectiveDate) await fillDateField(this.effectiveDateInput, schedule.effectiveDate);
   }
 
   async submit() {

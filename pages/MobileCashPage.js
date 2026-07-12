@@ -2,64 +2,78 @@ const { expect } = require("@playwright/test");
 const { selectOptionByLabelContains } = require("../utils/helpers");
 
 /**
- * Send Money > Mobile Cash form (cardless cash withdrawal to a mobile number).
- *
- * // VERIFY against the live app: the field name attributes below. Amount is often
- * // a fixed denomination dropdown/tile rather than a free-text input, so fillAmount
- * // tolerates both a <select> and an <input>.
+ * Send Money > Mobile Cash form (cardless cash to a receiver's NIC + mobile number).
+ * Real fields (confirmed against the live app):
+ *   From Account  - a display card defaulted to the primary account (no control to pick)
+ *   input[name="NIC"]                 - Receiver's NIC (without V/X)
+ *   input[name="mobileNo"]            - Receiver's Mobile Number
+ *   input[name="reMobileNo"]          - Re-enter Receiver's Mobile Number
+ *   input[name="name"]               - Receiver's Name
+ *   select[name="purposeofTransfer"] - Purpose
+ *   input[name="amount"]             - Mobile Cash Amount
+ *   input[name="remark"]             - Remarks
+ * There is no transfer-mode selector on this form.
  */
 class MobileCashPage {
   /** @param {import('@playwright/test').Page} page */
   constructor(page) {
     this.page = page;
-    this.fromAccountSelect = page.locator('select[name="accountFrom"]');
-    this.mobileNumberInput = page
-      .locator('input[name="mobileNumber"], input[name="mobileNo"], input[name="recipientMobile"]')
-      .first();
-    this.amountInput = page.locator('input[name="amount"]').or(page.getByPlaceholder(/amount/i)).first();
-    this.amountSelect = page.locator('select[name="amount"], select[name="denomination"]').first();
-    this.remarkInput = page.locator('input[name="remark"], input[name="beneficiaryRemark"]').first();
-    this.transferModeRadios = page.locator('input[name="transferMode"]');
+    this.nicInput = page.locator('input[name="NIC"]');
+    this.mobileNumberInput = page.locator('input[name="mobileNo"]');
+    this.reMobileNumberInput = page.locator('input[name="reMobileNo"]');
+    this.receiverNameInput = page.locator('input[name="name"]');
+    this.purposeSelect = page.locator('select[name="purposeofTransfer"]');
+    this.amountInput = page.locator('input[name="amount"]');
+    this.remarkInput = page.locator('input[name="remark"]');
     this.submitButton = page.getByRole("button", { name: "Submit", exact: true });
   }
 
   /** ASSERTION: the Mobile Cash form is displayed. */
   async assertLoaded() {
-    await expect(this.fromAccountSelect, "Mobile Cash form: From Account dropdown should be visible").toBeVisible({
+    await expect(this.mobileNumberInput, "Mobile Cash form: Receiver's Mobile Number field should be visible").toBeVisible({
       timeout: 30_000,
     });
-    await expect(this.mobileNumberInput, "Mobile Cash form: Mobile Number field should be visible").toBeVisible();
+    await expect(this.nicInput, "Mobile Cash form: Receiver's NIC field should be visible").toBeVisible();
+    // The From Account control loads asynchronously (skeleton loader). Give it a
+    // chance to resolve; non-fatal here so validation still runs (see submit()).
+    await this.page
+      .waitForFunction(() => {
+        const f = document.querySelector("form");
+        return f && !f.querySelector(".animate-pulse");
+      }, null, { timeout: 15_000 })
+      .catch(() => {});
   }
 
   async fillForm(data) {
-    await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount);
-
-    await this.mobileNumberInput.click();
+    if (data.nic) await this.nicInput.fill(data.nic);
     await this.mobileNumberInput.fill(data.mobileNumber);
+    await this.reMobileNumberInput.fill(data.mobileNumber);
+    if (data.receiverName) await this.receiverNameInput.fill(data.receiverName);
+    if (data.purpose) await selectOptionByLabelContains(this.purposeSelect, data.purpose);
+    if (data.amount) await this.amountInput.fill(data.amount);
+    if (data.remark) await this.remarkInput.fill(data.remark);
+
+    // ASSERTION: the entered mobile number is reflected in the form.
     await expect(this.mobileNumberInput, "Mobile number should hold the entered value").toHaveValue(
       new RegExp(data.mobileNumber.slice(-4))
     );
-
-    // Amount may be a dropdown of denominations or a free-text input.
-    if (await this.amountSelect.isVisible().catch(() => false)) {
-      await selectOptionByLabelContains(this.amountSelect, data.amount);
-    } else if (await this.amountInput.isEditable().catch(() => false)) {
-      await this.amountInput.fill(data.amount);
-    }
-
-    if (data.remark && (await this.remarkInput.isVisible().catch(() => false))) {
-      await this.remarkInput.fill(data.remark);
-    }
   }
 
-  async ensureOneTimeTransaction() {
-    const oneTime = this.transferModeRadios.first();
-    if ((await oneTime.count()) > 0 && !(await oneTime.isChecked().catch(() => false))) {
-      await oneTime.check({ force: true }).catch(() => {});
-    }
-  }
+  /** No transfer-mode selector on the Mobile Cash form. */
+  async ensureOneTimeTransaction() {}
 
   async submit() {
+    // Distinguish a stuck From Account loader from ordinary form validation so the
+    // failure is actionable rather than a vague "Submit disabled".
+    if (!(await this.submitButton.isEnabled().catch(() => false))) {
+      const loaderStuck = await this.page.locator("form .animate-pulse").first().isVisible().catch(() => false);
+      if (loaderStuck) {
+        throw new Error(
+          "Mobile Cash 'From Account' never loaded (still showing a skeleton loader), so Submit stays disabled. " +
+            "This is an environment/backend issue - the eligible-accounts data is not available for Mobile Cash."
+        );
+      }
+    }
     await expect(this.submitButton, "Submit button should be enabled once the form is valid").toBeEnabled({
       timeout: 15_000,
     });

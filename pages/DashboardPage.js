@@ -89,20 +89,63 @@ class DashboardPage {
   }
 
   /**
-   * Navigates via the top-nav "Quick Actions" dropdown.
-   * The dropdown (a SubMenu component) is collapsed (pointer-events:none) until the
-   * "Quick Actions" nav is clicked; then its links (a.subMenuItem) route to the
-   * feature page. The dashboard body tiles with the same labels are NOT the nav.
+   * Waits for any Toastify toast (e.g. the login-success toast) to clear, so it
+   * cannot overlay the top nav and intercept clicks. Bounded and non-fatal.
    */
-  async openQuickAction(itemName) {
-    await this.quickActions.click();
+  async waitForToastsToClear(timeout = 12_000) {
+    await this.page
+      .waitForFunction(() => !document.querySelector(".Toastify__toast"), null, { timeout })
+      .catch(() => {});
+  }
+
+  /**
+   * The top nav is briefly disabled/inert while the dashboard finishes loading
+   * (My Accounts / Manage Schedules / Portfolio render as [disabled] and the
+   * navLinks container intercepts clicks). Wait for that to lift, plus any toast,
+   * before driving a nav click. Bounded and non-fatal.
+   */
+  async waitForNavReady(timeout = 30_000) {
+    await this.waitForToastsToClear();
+    await expect(this.myAccountsNav, "Top nav should become interactive after the dashboard loads")
+      .toBeEnabled({ timeout })
+      .catch(() => {});
+    await this.waitForToastsToClear(3_000);
+  }
+
+  /**
+   * Opens a top-nav dropdown (SubMenu) by clicking its trigger, then clicks the
+   * item link (a.subMenuItem) that routes to the feature page. The dropdown is
+   * collapsed until the trigger is clicked; the dashboard body tiles with the same
+   * labels are NOT the nav. Shared by Quick Actions and My Accounts menus.
+   */
+  async openNavDropdownItem(triggerLocator, itemName) {
+    await this.waitForNavReady();
+    await triggerLocator.click();
     const item = this.page.locator('a[class*="subMenuItem"]').filter({ hasText: itemName }).first();
-    await expect(item, `Quick Action "${itemName}" should be visible in the menu`).toBeVisible({ timeout: 30_000 });
+    await expect(item, `"${itemName}" should be visible in the nav dropdown`).toBeVisible({ timeout: 30_000 });
     await item.click();
+    // The dropdown closes itself shortly after navigation; move the pointer clear of
+    // the panel and wait for it to close so it doesn't overlay the destination page.
+    await this.page.mouse.move(0, 0).catch(() => {});
+    await this.page
+      .locator('[class*="subMenuContainer"]')
+      .first()
+      .waitFor({ state: "hidden", timeout: 10_000 })
+      .catch(() => {});
+  }
+
+  /** Navigates via the top-nav "Quick Actions" dropdown. */
+  async openQuickAction(itemName) {
+    await this.openNavDropdownItem(this.quickActions, itemName);
   }
 
   async goToSendMoney() {
     await this.openQuickAction("Send Money");
+  }
+
+  /** My Accounts > Credit Cards (used by Own Card Settlement). */
+  async goToCreditCards() {
+    await this.openNavDropdownItem(this.myAccountsNav, "Credit Cards");
   }
 
   async goToBillPayment() {
@@ -115,6 +158,7 @@ class DashboardPage {
 
   /** Clicks a top-nav item by its visible text. */
   async openTopNav(itemName) {
+    await this.waitForNavReady();
     const item = this.page.getByText(itemName, { exact: true }).first();
     await expect(item, `Top-nav item "${itemName}" should be visible`).toBeVisible({ timeout: 60_000 });
     await item.click();

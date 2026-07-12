@@ -16,8 +16,6 @@ class SendMoneyPage {
     this.otherAccountsTab = page.getByRole("button", { name: "Other Accounts", exact: true });
     this.otherCreditCardsTab = page.getByRole("button", { name: "Other Credit Cards", exact: true });
     this.mobileCashTab = page.getByRole("button", { name: "Mobile Cash", exact: true });
-    // Own Card Settlement (pay your OWN Sampath credit card). VERIFY the exact tab label.
-    this.ownCardsTab = page.getByRole("button", { name: /own cards?|card settlement/i });
     // Method tabs (top of the Send Money screen).
     this.savedPayeesTab = page.getByRole("button", { name: "Saved Payees", exact: true });
     this.transactionHistoryTab = page.getByRole("button", { name: "Transaction History", exact: true });
@@ -51,13 +49,6 @@ class SendMoneyPage {
   async selectMobileCashTab() {
     await expect(this.mobileCashTab, "'Mobile Cash' tab should be visible").toBeVisible({ timeout: 30_000 });
     await this.mobileCashTab.click();
-  }
-
-  async selectOwnCardsTab() {
-    await expect(this.ownCardsTab.first(), "'Own Cards' / Card Settlement tab should be visible").toBeVisible({
-      timeout: 30_000,
-    });
-    await this.ownCardsTab.first().click();
   }
 
   async selectSavedPayeesTab() {

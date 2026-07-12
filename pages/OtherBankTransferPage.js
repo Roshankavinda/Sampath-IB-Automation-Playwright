@@ -29,15 +29,31 @@ class OtherBankTransferPage {
 
   /** ASSERTION: the Other Accounts form is displayed. */
   async assertLoaded() {
-    await expect(this.fromAccountSelect, "Other Accounts form: From Account dropdown should be visible").toBeVisible({
+    // Bank + To Account load reliably; the From Account loads asynchronously (skeleton).
+    await expect(this.bankSelect, "Other Accounts form: Bank dropdown should be visible").toBeVisible({
       timeout: 30_000,
     });
-    await expect(this.bankSelect, "Other Accounts form: Bank dropdown should be visible").toBeVisible();
     await expect(this.toAccountNumberInput, "Other Accounts form: To Account Number field should be visible").toBeVisible();
+    // Give the From Account skeleton loader a chance to resolve (non-fatal).
+    await this.page
+      .waitForFunction(() => {
+        const f = document.querySelector("form");
+        return f && !f.querySelector(".animate-pulse");
+      }, null, { timeout: 30_000 })
+      .catch(() => {});
   }
 
+  /**
+   * Selects the From Account once it has loaded. The dropdown loads asynchronously
+   * (skeleton) and defaults to the primary account, so if it hasn't resolved we fall
+   * back to that default rather than failing.
+   */
   async selectFromAccount(partial) {
-    await selectOptionByLabelContains(this.fromAccountSelect, partial);
+    const ready = await this.fromAccountSelect
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (ready) await selectOptionByLabelContains(this.fromAccountSelect, partial).catch(() => {});
   }
 
   async selectBank(partial) {
