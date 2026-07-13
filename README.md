@@ -6,28 +6,43 @@ Navigation is done by **clicking through the UI** (only the login page is opened
 
 ## Phase 1 scope
 
-Happy paths and negative/validation cases are split into **two folders**
-(`tests/happy/` and `tests/negative/`), one `<feature>.spec.js` per feature in each,
+Positive paths and negative/validation cases are split into **two folders**
+(`tests/positive/` and `tests/negative/`), one `<feature>.spec.js` per feature in each,
 and every page object asserts key UI elements.
 
-| Feature | Happy spec | Negative spec |
+| Feature | Positive spec | Negative spec |
 |---------|-----------|---------------|
-| Login (Username & Password) | `happy/login.spec.js` | `negative/login.spec.js` |
-| Forgot Password | `happy/forgotPassword.spec.js` | `negative/forgotPassword.spec.js` |
-| Dashboard (all validations) | `happy/dashboard.spec.js` | `negative/dashboard.spec.js` |
-| Fund Transfer - Own Account | `happy/fundTransferOwnAccount.spec.js` | `negative/fundTransferOwnAccount.spec.js` |
-| Fund Transfer - Intra Bank (Sampath) | `happy/fundTransferIntraBank.spec.js` | `negative/fundTransferIntraBank.spec.js` |
-| Fund Transfer - Other Bank | `happy/fundTransferOtherBank.spec.js` | `negative/fundTransferOtherBank.spec.js` |
-| Fund Transfer - Mobile Cash | `happy/fundTransferMobileCash.spec.js` | `negative/fundTransferMobileCash.spec.js` |
-| Fund Transfer - Other Bank Credit Card | `happy/fundTransferOtherCreditCard.spec.js` | `negative/fundTransferOtherCreditCard.spec.js` |
-| Own Card Settlement | `happy/ownCardSettlement.spec.js` | `negative/ownCardSettlement.spec.js` |
-| Stop Card (Credit/Debit/Web) | `happy/stopCard.spec.js` | `negative/stopCard.spec.js` |
-| Bill Payment (Dialog & Mobitel) | `happy/billPayment.spec.js` | `negative/billPayment.spec.js` |
+| Login (Username & Password) | `positive/login.spec.js` | `negative/login.spec.js` |
+| Forgot Password | `positive/forgotPassword.spec.js` | `negative/forgotPassword.spec.js` |
+| Dashboard (all validations) | `positive/dashboard.spec.js` | `negative/dashboard.spec.js` |
+| Fund Transfer - Own Account | `positive/fundTransferOwnAccount.spec.js` | `negative/fundTransferOwnAccount.spec.js` |
+| Fund Transfer - Intra Bank (Sampath) | `positive/fundTransferIntraBank.spec.js` | `negative/fundTransferIntraBank.spec.js` |
+| Fund Transfer - Other Bank | `positive/fundTransferOtherBank.spec.js` | `negative/fundTransferOtherBank.spec.js` |
+| Fund Transfer - Mobile Cash | `positive/fundTransferMobileCash.spec.js` | `negative/fundTransferMobileCash.spec.js` |
+| Fund Transfer - Other Bank Credit Card | `positive/fundTransferOtherCreditCard.spec.js` | `negative/fundTransferOtherCreditCard.spec.js` |
+| Own Card Settlement | `positive/ownCardSettlement.spec.js` | `negative/ownCardSettlement.spec.js` |
+| Stop Card (Credit/Debit/Web) | `positive/stopCard.spec.js` | `negative/stopCard.spec.js` |
+| Bill Payment (Dialog & Mobitel) | `positive/billPayment.spec.js` | `negative/billPayment.spec.js` |
+| Add New Payee (Payees & Billers) | `positive/addPayee.spec.js` | `negative/addPayee.spec.js` |
+| Add New Biller (Payees & Billers) | `positive/addBiller.spec.js` | `negative/addBiller.spec.js` |
 
-> ⚠️ **Selectors for the newer flows are inferred from the existing patterns, not from the live DOM.**
+> ⚠️ **Some selectors are still inferred rather than confirmed against the live DOM.**
 > Every place that needs confirming against the real UAT app is marked with a `// VERIFY`
 > comment in the page object, or an inline note in `test-data/testData.js`. Run each flow
 > once in `--headed --slowmo` and adjust the flagged `name`/label values as needed.
+
+### Entering the OTP by hand
+
+A real OTP is sent to the registered phone. To type it in yourself instead of using the
+UAT bypass code, run headed with manual-OTP mode — the test pauses at the OTP popup until
+you enter the code and click Confirm:
+
+```bash
+npm run test:manual-otp                 # whole suite, headed, one worker
+IB_MANUAL_OTP=true npx playwright test tests/positive/fundTransferOwnAccount.spec.js --headed
+```
+
+`IB_MANUAL_OTP_TIMEOUT` (default `180000` ms) controls how long it waits for you.
 
 ## Project structure
 
@@ -52,7 +67,7 @@ sampath-ib-automation/
 │   ├── BillPaymentPage.js       # Bill Payment (Dialog & Mobitel)
 │   └── ConfirmationPopup.js     # transaction OTP + success (shared)
 ├── tests/                      # Specs — one <feature>.spec.js per feature in each folder
-│   ├── happy/                  # happy-path spec per feature
+│   ├── positive/                  # positive-path spec per feature
 │   └── negative/               # negative / validation spec per feature
 └── utils/
     ├── helpers.js              # OTP filler, dropdown-by-label, validation-error assert,
@@ -105,13 +120,13 @@ Run everything (GUI/headed by default):
 npm test
 ```
 
-Run only the happy paths, or only the negative/validation cases:
+Run only the positive paths, or only the negative/validation cases:
 ```bash
-npm run test:happy        # every *.happy.spec.js
+npm run test:positive        # every *.positive.spec.js
 npm run test:negative     # every *.negative.spec.js
 ```
 
-Run one feature (both its happy + negative specs open the browser so you can watch):
+Run one feature (both its positive + negative specs open the browser so you can watch):
 ```bash
 npm run test:login          # Login
 npm run test:forgot         # Forgot Password

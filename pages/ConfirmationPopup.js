@@ -58,12 +58,45 @@ class ConfirmationPopup {
     }
   }
 
+  /**
+   * Enters the transaction OTP and confirms.
+   *
+   * A real OTP is sent to the registered phone. Set IB_MANUAL_OTP=true (and run headed)
+   * to type it in yourself: the test then waits for you to enter it and press Confirm.
+   * Otherwise the OTP from test data is filled automatically (UAT bypass code).
+   */
   async enterOtpAndConfirm(otp) {
+    if (process.env.IB_MANUAL_OTP === "true") return this.waitForManualOtp();
+
     await fillOtpBoxes(this.page, otp);
     await expect(this.confirmButton, "Confirm button should be enabled after entering OTP").toBeEnabled({
       timeout: 10_000,
     });
     await this.confirmButton.click();
+  }
+
+  /**
+   * Manual-OTP mode: pause while the OTP that was sent to the phone is typed in by hand
+   * and Confirm is clicked. Completion is detected by the OTP popup closing.
+   */
+  async waitForManualOtp() {
+    const timeout = Number(process.env.IB_MANUAL_OTP_TIMEOUT || 180_000);
+    // eslint-disable-next-line no-console
+    console.log(
+      `\n>>> MANUAL OTP: enter the OTP sent to your phone in the browser and click Confirm ` +
+        `(waiting up to ${Math.round(timeout / 1000)}s)...\n`
+    );
+    const done = await this.otpBoxes
+      .first()
+      .waitFor({ state: "hidden", timeout })
+      .then(() => true)
+      .catch(() => false);
+    if (!done) {
+      throw new Error(
+        `Timed out after ${Math.round(timeout / 1000)}s waiting for the OTP to be entered and confirmed manually. ` +
+          "Run headed (npm run test:manual-otp) so the browser is visible, and raise IB_MANUAL_OTP_TIMEOUT if needed."
+      );
+    }
   }
 
   /** ASSERTION: transaction success is shown. */

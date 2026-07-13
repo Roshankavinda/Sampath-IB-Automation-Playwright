@@ -6,7 +6,7 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
-    "test:happy": "playwright test tests/happy --headed",
+    "test:positive": "playwright test tests/positive --headed",
     "test:negative": "playwright test tests/negative --headed",
     "test:login": "playwright test tests/*/login.spec.js --headed",
     "test:forgot": "playwright test tests/*/forgotPassword.spec.js --headed",
@@ -19,6 +19,9 @@
     "test:cardsettlement": "playwright test tests/*/ownCardSettlement.spec.js --headed",
     "test:stopcard": "playwright test tests/*/stopCard.spec.js --headed",
     "test:billpay": "playwright test tests/*/billPayment.spec.js --headed",
+    "test:payee": "playwright test tests/*/addPayee.spec.js --headed",
+    "test:biller": "playwright test tests/*/addBiller.spec.js --headed",
+    "test:manual-otp": "IB_MANUAL_OTP=true playwright test --headed --workers=1",
     "report": "playwright show-report"
   },
   "keywords": ["playwright", "pom", "automation", "sampath", "banking"],

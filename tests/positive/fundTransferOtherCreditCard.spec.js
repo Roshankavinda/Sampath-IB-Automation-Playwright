@@ -1,18 +1,19 @@
 const { test } = require("../../utils/fixtures");
 const { SendMoneyPage } = require("../../pages/SendMoneyPage");
-const { OwnAccountPage } = require("../../pages/OwnAccountPage");
+const { OtherCreditCardsPage } = require("../../pages/OtherCreditCardsPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, ownTransfer } = require("../../test-data/testData");
+const { credentials, otherCreditCardTransfer } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Feature: Fund Transfer - Own Account — HAPPY PATH.
- * Login -> Send Money -> Own Account -> fill -> One-time -> Submit -> OTP -> success.
+ * Feature: Fund Transfer - Other Bank Credit Card — POSITIVE.
+ * Login -> Send Money -> Other Credit Cards -> From -> Card Number -> Amount ->
+ * One-time -> Submit -> OTP -> success.
  */
-test.describe("Fund Transfer - Own Account - Happy Path", () => {
-  test("TC_FT_OWN_H01 - Transfer between own accounts (One-time)", async ({ page, loggedInDashboard }) => {
+test.describe("Fund Transfer - Other Bank Credit Card - Positive", () => {
+  test("TC_FT_OCC_H01 - Pay another bank's credit card (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
-    const ownAccount = new OwnAccountPage(page);
+    const cards = new OtherCreditCardsPage(page);
     const popup = new ConfirmationPopup(page);
 
     await test.step("Navigate to Send Money via Quick Actions", async () => {
@@ -20,23 +21,23 @@ test.describe("Fund Transfer - Own Account - Happy Path", () => {
       await sendMoney.assertLoaded();
     });
 
-    await test.step("Open the 'Own Account' tab and validate the form", async () => {
-      await sendMoney.selectOwnAccountTab();
-      await ownAccount.assertLoaded();
+    await test.step("Open the 'Other Credit Cards' tab and validate the form", async () => {
+      await sendMoney.selectOtherCreditCardsTab();
+      await cards.assertLoaded();
     });
 
-    await test.step("Fill the own account transfer details", async () => {
-      await ownAccount.fillForm(ownTransfer);
+    await test.step("Fill the credit card payment details", async () => {
+      await cards.fillForm(otherCreditCardTransfer);
     });
 
     await test.step("Ensure One-time Transaction mode is selected", async () => {
-      await ownAccount.ensureOneTimeTransaction();
+      await cards.ensureOneTimeTransaction();
     });
 
     await test.step("Submit and validate the OTP/confirmation popup", async () => {
-      await ownAccount.submit();
+      await cards.submit();
       await popup.assertVisible();
-      await popup.verifyDetails({ amount: ownTransfer.amount });
+      await popup.verifyDetails({ amount: otherCreditCardTransfer.amount });
     });
 
     await test.step("Enter transaction OTP and confirm", async () => {

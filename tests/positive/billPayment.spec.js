@@ -5,11 +5,11 @@ const { credentials, billPayments } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Feature: Bill Payment (Dialog & Mobitel only) — HAPPY PATH.
+ * Feature: Bill Payment (Dialog & Mobitel only) — POSITIVE.
  * Login -> Bill Payment -> category -> biller -> pay-by-account -> reference ->
  * amount -> Proceed -> OTP -> success. Runs once for Dialog and once for Mobitel.
  */
-test.describe("Bill Payment - Happy Path", () => {
+test.describe("Bill Payment - Positive", () => {
   const cases = [
     { id: "TC_BILL_H01", label: "Dialog", data: billPayments.dialog },
     { id: "TC_BILL_H02", label: "Mobitel", data: billPayments.mobitel },

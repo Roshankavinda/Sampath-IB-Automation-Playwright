@@ -25,8 +25,11 @@ const credentials = {
 };
 
 const invalidCredentials = {
+  // IMPORTANT: never point this at the real IB_USERNAME. The app counts failed attempts
+  // ("REMAINING LOGIN ATTEMPTS: 4") and locks the account, which would break every other
+  // test. Use a throwaway username that exists but is not the one under test.
   wrongPassword: {
-    username: process.env.IB_USERNAME || "v11user8",
+    username: process.env.IB_INVALID_USERNAME || "v11user8",
     password: "Wrong@1234",
   },
   unknownUser: {
@@ -51,8 +54,8 @@ const forgotPassword = {
  * ---------------------------------------------------------------- */
 const ownTransfer = {
   fromAccount: "1018 5010 4310",
-  toAccount: "0018 5002 2719",
-  amount: "100",
+  toAccount: "1018 5525 0495",
+  amount: "500",
   senderRemark: "PW Own Transfer",
   beneficiaryRemark: "PW Own Transfer",
 };
@@ -148,22 +151,49 @@ const stopCard = {
  * 10. Bill Payment - Dialog & Mobitel only
  * ---------------------------------------------------------------- */
 const billPayments = {
+  // Dialog and Mobitel both live under the "Telephone" category (there is no "Mobile"
+  // category). Biller names are the full labels shown on the tiles.
   dialog: {
-    category: "Mobile",             // VERIFY: category tile for mobile operators
-    biller: "Dialog",              // VERIFY: exact Dialog biller name once category opens
+    category: "Telephone",
+    biller: "Dialog Mobile",
     fromAccount: "1018 5010 4310",
-    referenceFieldName: "Mobile No", // VERIFY: exact reference field label for Dialog
+    referenceFieldName: "Your GSM Phone Number", // located by name attr; label only
     referenceValue: "0771234567",   // EDIT: a valid Dialog number/account
     amount: "500",                  // EDIT: amount (if editable)
   },
   mobitel: {
-    category: "Mobile",             // VERIFY
-    biller: "Mobitel",             // VERIFY: exact Mobitel biller name
+    category: "Telephone",
+    biller: "Mobitel Pvt Ltd",
     fromAccount: "1018 5010 4310",
-    referenceFieldName: "Mobile No", // VERIFY
+    referenceFieldName: "Your GSM Phone Number", // located by name attr; label only
     referenceValue: "0712345678",   // EDIT: a valid Mobitel number/account
     amount: "500",                  // EDIT
   },
+};
+
+/* ----------------------------------------------------------------
+ * 11. Add New Payee (Payees & Billers > Saved Payees > Add New Payee)
+ * ---------------------------------------------------------------- */
+const newPayee = {
+  // An OTHER-BANK payee (mirrors the Other Bank transfer details).
+  // NOTE: changing the Bank clears the Account Holder's Name, so the page object
+  // selects the dropdowns before typing the text fields.
+  type: "Account",                  // select[name="type"]: "Account" | "Card"
+  bank: "TEST BANK B",              // Bank* - partial match on the bank option label
+  accountName: "Test User",         // Account Holder's Name* (max 30 chars)
+  nickName: "PWOtherBank",          // Nickname* (max 15 chars)
+  accountNumber: "9901234561",      // Account Number*
+};
+
+/* ----------------------------------------------------------------
+ * 12. Add New Biller (Payees & Billers > Saved Billers > Add New Biller)
+ * ---------------------------------------------------------------- */
+const newBiller = {
+  category: "Telephone",            // select[name="categoryId"]
+  biller: "Dialog Mobile",          // select[name="billerId"] - populated per category
+  templateName: "PW Dialog Bill",   // Template Name*
+  amount: "500",                    // Amount*
+  referenceValue: "0771234567",     // the biller's own field (Dialog: GSM phone number)
 };
 
 /* ----------------------------------------------------------------
@@ -252,14 +282,30 @@ const negative = {
   billPayment: {
     // Dialog with a mismatched "Re Enter" reference number.
     mismatchedReference: {
-      category: "Mobile",
-      biller: "Dialog",
+      category: "Telephone",
+      biller: "Dialog Mobile",
       fromAccount: "1018 5010 4310",
-      referenceFieldName: "Mobile No",
+      referenceFieldName: "Your GSM Phone Number",
       referenceValue: "0771234567",
       reEnterValue: "0770000000",       // intentionally different
       amount: "500",
       expectedError: /match|same|re-?enter|do not/i,
+    },
+  },
+
+  // Add New Payee: submitting an empty form must raise inline "is required" errors
+  // ("Next" is NOT disabled once the bank list has loaded).
+  newPayee: {
+    emptyForm: {
+      expectedError: /is required/i,
+    },
+  },
+
+  // Add New Biller: submitting an empty form must raise inline "is required" errors
+  // ("Next" is NOT disabled on this form).
+  newBiller: {
+    emptyForm: {
+      expectedError: /is required/i,
     },
   },
 };
@@ -276,5 +322,7 @@ module.exports = {
   ownCardSettlement,
   stopCard,
   billPayments,
+  newPayee,
+  newBiller,
   negative,
 };

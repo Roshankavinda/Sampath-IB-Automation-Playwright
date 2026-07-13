@@ -5,11 +5,11 @@ const { credentials, stopCard } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Feature: Stop Card (Credit / Debit / Web) — HAPPY PATH.
+ * Feature: Stop Card (Credit / Debit / Web) — POSITIVE.
  * Login -> Quick Actions -> Stop Card -> card type -> card -> reason ->
  * Submit -> OTP -> success. Runs once per card type.
  */
-test.describe("Stop Card - Happy Path", () => {
+test.describe("Stop Card - Positive", () => {
   const cases = [
     { id: "TC_STOPCARD_H01", label: "Credit", data: stopCard.credit },
     { id: "TC_STOPCARD_H02", label: "Debit", data: stopCard.debit },

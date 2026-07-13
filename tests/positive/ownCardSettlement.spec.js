@@ -5,11 +5,11 @@ const { credentials, ownCardSettlement } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Feature: Own Card Settlement — HAPPY PATH.
+ * Feature: Own Card Settlement — POSITIVE.
  * Login -> My Accounts > Credit Cards -> select the card -> Settle ->
  * funding account / amount -> Submit -> OTP -> success.
  */
-test.describe("Own Card Settlement - Happy Path", () => {
+test.describe("Own Card Settlement - Positive", () => {
   test("TC_OCS_H01 - Settle own credit card", async ({ page, loggedInDashboard }) => {
     const settle = new OwnCardSettlementPage(page);
     const popup = new ConfirmationPopup(page);

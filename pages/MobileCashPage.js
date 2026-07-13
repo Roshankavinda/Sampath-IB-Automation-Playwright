@@ -44,7 +44,26 @@ class MobileCashPage {
       .catch(() => {});
   }
 
+  /**
+   * The app intermittently bounces back to the Dashboard while the Mobile Cash form is
+   * open. Without this guard the next fill() just times out on a missing locator, which
+   * hides what actually happened.
+   */
+  async assertFormStillOpen() {
+    const onForm = await this.nicInput
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!onForm) {
+      throw new Error(
+        `The Mobile Cash form is no longer on screen (current URL: ${this.page.url()}). ` +
+          "The app navigated away from Send Money - it dropped back to the Dashboard before the form could be filled."
+      );
+    }
+  }
+
   async fillForm(data) {
+    await this.assertFormStillOpen();
     if (data.nic) await this.nicInput.fill(data.nic);
     await this.mobileNumberInput.fill(data.mobileNumber);
     await this.reMobileNumberInput.fill(data.mobileNumber);
@@ -69,8 +88,11 @@ class MobileCashPage {
       const loaderStuck = await this.page.locator("form .animate-pulse").first().isVisible().catch(() => false);
       if (loaderStuck) {
         throw new Error(
-          "Mobile Cash 'From Account' never loaded (still showing a skeleton loader), so Submit stays disabled. " +
-            "This is an environment/backend issue - the eligible-accounts data is not available for Mobile Cash."
+          "Mobile Cash 'From Account' never loads: its skeleton loader spins forever, so Submit stays disabled and " +
+            "this transaction cannot be completed. The server returns HTTP 500 " +
+            '{"title":"failed","message":"Internal server error","code":500} for the Mobile Cash eligible-accounts ' +
+            "request, so the account list is never populated. This is an environment/backend defect, not a test issue - " +
+            "the positive path cannot pass until the backend serves the Mobile Cash From Account list."
         );
       }
     }

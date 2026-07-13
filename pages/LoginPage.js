@@ -17,10 +17,14 @@ class LoginPage {
     this.usernameInput = page.locator('input[name="username"]');
     this.passwordInput = page.locator('input[name="cred"]');
     this.loginButton = page.getByRole("button", { name: "Login", exact: true });
-    this.errorToast = page.getByText(/login failed/i);
+    // The app's real message is a toast:
+    // "LOGIN FAILED! PLEASE RECHECK THE USERNAME AND PASSWORD AND TRY AGAIN."
+    // (a wrong password also appends "REMAINING LOGIN ATTEMPTS: n").
+    this.errorToast = page.getByText(/login failed|recheck the username|remaining login attempts/i).first();
     this.otpBoxes = page.locator("input.otp-box");
-    // "Forgot Password" link on the login screen. VERIFY exact wording.
-    this.forgotPasswordLink = page.getByText(/forgot (your )?password/i).first();
+    // The login screen shows a non-clickable "Forgot Password?" label next to a link
+    // labelled "Reset". Target the link by its href so we never click the plain text.
+    this.forgotPasswordLink = page.locator('a[href*="forgot-password"]').first();
   }
 
   /** Opens the only URL-based navigation in the whole suite: the login page. */
@@ -77,18 +81,23 @@ class LoginPage {
     await this.handleOtpIfPresent(otp);
   }
 
-  /** Opens the Forgot Password flow from the login screen. */
+  /** Opens the Forgot Password ("Reset") flow from the login screen. */
   async goToForgotPassword() {
-    await expect(this.forgotPasswordLink, "'Forgot Password' link should be visible on the login page").toBeVisible({
-      timeout: 30_000,
-    });
+    await expect(this.forgotPasswordLink, "'Reset' (Forgot Password) link should be visible on the login page").toBeVisible(
+      { timeout: 30_000 }
+    );
     await this.forgotPasswordLink.click();
   }
 
-  /** ASSERTION: invalid login shows the failure toast and stays on login. */
+  /**
+   * ASSERTION: invalid login shows the failure toast and stays on login.
+   *
+   * The toast is transient (it auto-closes after a few seconds) and this environment can
+   * be slow to answer the login request, so it gets a generous window to appear.
+   */
   async assertLoginFailed() {
-    await expect(this.errorToast, "A 'Login Failed' message should be displayed for invalid credentials").toBeVisible({
-      timeout: 20_000,
+    await expect(this.errorToast, "A 'LOGIN FAILED' message should be displayed for invalid credentials").toBeVisible({
+      timeout: 60_000,
     });
     await expect(this.usernameInput, "User should remain on the login page").toBeVisible();
   }

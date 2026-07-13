@@ -1,19 +1,18 @@
 const { test } = require("../../utils/fixtures");
 const { SendMoneyPage } = require("../../pages/SendMoneyPage");
-const { MobileCashPage } = require("../../pages/MobileCashPage");
+const { OwnAccountPage } = require("../../pages/OwnAccountPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, mobileCash } = require("../../test-data/testData");
+const { credentials, ownTransfer } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Feature: Fund Transfer - Mobile Cash — HAPPY PATH.
- * Login -> Send Money -> Mobile Cash -> From -> Mobile Number -> Amount ->
- * One-time -> Submit -> OTP -> success.
+ * Feature: Fund Transfer - Own Account — POSITIVE.
+ * Login -> Send Money -> Own Account -> fill -> One-time -> Submit -> OTP -> success.
  */
-test.describe("Fund Transfer - Mobile Cash - Happy Path", () => {
-  test("TC_FT_MCASH_H01 - Send Mobile Cash to a mobile number (One-time)", async ({ page, loggedInDashboard }) => {
+test.describe("Fund Transfer - Own Account - Positive", () => {
+  test("TC_FT_OWN_H01 - Transfer between own accounts (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
-    const mobile = new MobileCashPage(page);
+    const ownAccount = new OwnAccountPage(page);
     const popup = new ConfirmationPopup(page);
 
     await test.step("Navigate to Send Money via Quick Actions", async () => {
@@ -21,23 +20,23 @@ test.describe("Fund Transfer - Mobile Cash - Happy Path", () => {
       await sendMoney.assertLoaded();
     });
 
-    await test.step("Open the 'Mobile Cash' tab and validate the form", async () => {
-      await sendMoney.selectMobileCashTab();
-      await mobile.assertLoaded();
+    await test.step("Open the 'Own Account' tab and validate the form", async () => {
+      await sendMoney.selectOwnAccountTab();
+      await ownAccount.assertLoaded();
     });
 
-    await test.step("Fill the Mobile Cash details", async () => {
-      await mobile.fillForm(mobileCash);
+    await test.step("Fill the own account transfer details", async () => {
+      await ownAccount.fillForm(ownTransfer);
     });
 
     await test.step("Ensure One-time Transaction mode is selected", async () => {
-      await mobile.ensureOneTimeTransaction();
+      await ownAccount.ensureOneTimeTransaction();
     });
 
     await test.step("Submit and validate the OTP/confirmation popup", async () => {
-      await mobile.submit();
+      await ownAccount.submit();
       await popup.assertVisible();
-      await popup.verifyDetails({ amount: mobileCash.amount });
+      await popup.verifyDetails({ amount: ownTransfer.amount });
     });
 
     await test.step("Enter transaction OTP and confirm", async () => {

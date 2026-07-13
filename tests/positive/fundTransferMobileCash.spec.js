@@ -1,19 +1,19 @@
 const { test } = require("../../utils/fixtures");
 const { SendMoneyPage } = require("../../pages/SendMoneyPage");
-const { OtherCreditCardsPage } = require("../../pages/OtherCreditCardsPage");
+const { MobileCashPage } = require("../../pages/MobileCashPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, otherCreditCardTransfer } = require("../../test-data/testData");
+const { credentials, mobileCash } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Feature: Fund Transfer - Other Bank Credit Card — HAPPY PATH.
- * Login -> Send Money -> Other Credit Cards -> From -> Card Number -> Amount ->
+ * Feature: Fund Transfer - Mobile Cash — POSITIVE.
+ * Login -> Send Money -> Mobile Cash -> From -> Mobile Number -> Amount ->
  * One-time -> Submit -> OTP -> success.
  */
-test.describe("Fund Transfer - Other Bank Credit Card - Happy Path", () => {
-  test("TC_FT_OCC_H01 - Pay another bank's credit card (One-time)", async ({ page, loggedInDashboard }) => {
+test.describe("Fund Transfer - Mobile Cash - Positive", () => {
+  test("TC_FT_MCASH_H01 - Send Mobile Cash to a mobile number (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
-    const cards = new OtherCreditCardsPage(page);
+    const mobile = new MobileCashPage(page);
     const popup = new ConfirmationPopup(page);
 
     await test.step("Navigate to Send Money via Quick Actions", async () => {
@@ -21,23 +21,23 @@ test.describe("Fund Transfer - Other Bank Credit Card - Happy Path", () => {
       await sendMoney.assertLoaded();
     });
 
-    await test.step("Open the 'Other Credit Cards' tab and validate the form", async () => {
-      await sendMoney.selectOtherCreditCardsTab();
-      await cards.assertLoaded();
+    await test.step("Open the 'Mobile Cash' tab and validate the form", async () => {
+      await sendMoney.selectMobileCashTab();
+      await mobile.assertLoaded();
     });
 
-    await test.step("Fill the credit card payment details", async () => {
-      await cards.fillForm(otherCreditCardTransfer);
+    await test.step("Fill the Mobile Cash details", async () => {
+      await mobile.fillForm(mobileCash);
     });
 
     await test.step("Ensure One-time Transaction mode is selected", async () => {
-      await cards.ensureOneTimeTransaction();
+      await mobile.ensureOneTimeTransaction();
     });
 
     await test.step("Submit and validate the OTP/confirmation popup", async () => {
-      await cards.submit();
+      await mobile.submit();
       await popup.assertVisible();
-      await popup.verifyDetails({ amount: otherCreditCardTransfer.amount });
+      await popup.verifyDetails({ amount: mobileCash.amount });
     });
 
     await test.step("Enter transaction OTP and confirm", async () => {

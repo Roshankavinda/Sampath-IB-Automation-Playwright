@@ -152,6 +152,16 @@ class DashboardPage {
     await this.openQuickAction("Bill Payment");
   }
 
+  /** Payees & Billers > Saved Payees (the "Add New Payee" flow lives on this page). */
+  async goToSavedPayees() {
+    await this.openNavDropdownItem(this.payeesBillersNav, "Saved Payees");
+  }
+
+  /** Payees & Billers > Saved Billers (the "Add New Biller" flow lives on this page). */
+  async goToSavedBillers() {
+    await this.openNavDropdownItem(this.payeesBillersNav, "Saved Billers");
+  }
+
   async goToStopCard() {
     await this.openQuickAction("Stop Card");
   }

@@ -4,10 +4,10 @@ const { credentials } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Feature: Login (Username & Password) — HAPPY PATH.
+ * Feature: Login (Username & Password) — POSITIVE.
  * Valid credentials -> (OTP bypassed in UAT) -> dashboard.
  */
-test.describe("Login - Happy Path", () => {
+test.describe("Login - Positive", () => {
   test("TC_LOGIN_H01 - Valid username & password lands on the dashboard", async ({ page, loginPage }) => {
     const dashboard = new DashboardPage(page);
 

@@ -2,18 +2,18 @@ const { test } = require("../../utils/fixtures");
 const { SendMoneyPage } = require("../../pages/SendMoneyPage");
 const { OtherBankTransferPage } = require("../../pages/OtherBankTransferPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, intraBankTransfer } = require("../../test-data/testData");
+const { credentials, otherBankTransfer } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Feature: Fund Transfer - Intra Bank (Sampath Bank) — HAPPY PATH.
- * Login -> Send Money -> Other Accounts -> Bank = Sampath -> account (name auto-fetched)
- * -> amount -> One-time -> Submit -> OTP -> success.
+ * Feature: Fund Transfer - Other Bank — POSITIVE.
+ * Login -> Send Money -> Other Accounts -> From -> Bank -> account + name ->
+ * amount -> purpose -> One-time -> Submit -> OTP -> success.
  */
-test.describe("Fund Transfer - Intra Bank (Sampath) - Happy Path", () => {
-  test("TC_FT_INTRA_H01 - Transfer to another Sampath account (One-time)", async ({ page, loggedInDashboard }) => {
+test.describe("Fund Transfer - Other Bank - Positive", () => {
+  test("TC_FT_OTHER_H01 - Transfer to another bank (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
-    const intra = new OtherBankTransferPage(page);
+    const otherBank = new OtherBankTransferPage(page);
     const popup = new ConfirmationPopup(page);
 
     await test.step("Navigate to Send Money via Quick Actions", async () => {
@@ -23,30 +23,36 @@ test.describe("Fund Transfer - Intra Bank (Sampath) - Happy Path", () => {
 
     await test.step("Open the 'Other Accounts' tab and validate the form", async () => {
       await sendMoney.selectOtherAccountsTab();
-      await intra.assertLoaded();
+      await otherBank.assertLoaded();
     });
 
-    await test.step("Select From Account and choose Sampath Bank", async () => {
-      await intra.selectFromAccount(intraBankTransfer.fromAccount);
-      await intra.selectBank(intraBankTransfer.bank);
+    await test.step("Select From Account and the destination bank", async () => {
+      await otherBank.selectFromAccount(otherBankTransfer.fromAccount);
+      await otherBank.selectBank(otherBankTransfer.bank);
     });
 
-    await test.step("Enter the Sampath account number and let the name auto-fetch", async () => {
-      await intra.enterIntraBankAccount(intraBankTransfer.toAccountNumber);
+    await test.step("Enter the beneficiary account number and name", async () => {
+      await otherBank.enterToAccountAndBeneficiary(
+        otherBankTransfer.toAccountNumber,
+        otherBankTransfer.beneficiaryName
+      );
     });
 
-    await test.step("Fill amount and remark", async () => {
-      await intra.fillAmountAndDetails(intraBankTransfer);
+    await test.step("Fill amount, purpose and beneficiary remark", async () => {
+      await otherBank.fillAmountAndDetails(otherBankTransfer);
     });
 
     await test.step("Ensure One-time Transaction mode is selected", async () => {
-      await intra.ensureOneTimeTransaction();
+      await otherBank.ensureOneTimeTransaction();
     });
 
     await test.step("Submit and validate the OTP/confirmation popup", async () => {
-      await intra.submit();
+      await otherBank.submit();
       await popup.assertVisible();
-      await popup.verifyDetails({ amount: intraBankTransfer.amount });
+      await popup.verifyDetails({
+        amount: otherBankTransfer.amount,
+        beneficiaryName: otherBankTransfer.beneficiaryName,
+      });
     });
 
     await test.step("Enter transaction OTP and confirm", async () => {

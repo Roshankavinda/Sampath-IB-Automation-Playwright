@@ -73,10 +73,23 @@ async function selectFirstRealOption(select) {
  * @param {number} [timeoutMs]
  */
 async function getToastText(page, timeoutMs = 8_000) {
-  const toast = page.locator(".Toastify__toast, [role='alert'], [role='status']").first();
+  // Prefer a real toast.
+  const toast = page.locator(".Toastify__toast").first();
   try {
     await toast.waitFor({ state: "visible", timeout: timeoutMs });
     return (await toast.innerText()).trim();
+  } catch {
+    /* fall through to the generic live regions */
+  }
+
+  // Next.js renders a route announcer with role="alert" that only echoes the page title
+  // ("Sampath Vishwa | Dashboard"). Reporting that as the app's message hides the real
+  // outcome, so drop it.
+  const region = page.locator("[role='alert'], [role='status']").first();
+  try {
+    await region.waitFor({ state: "visible", timeout: 1_000 });
+    const text = (await region.innerText()).trim();
+    return /^Sampath Vishwa\s*\|/i.test(text) ? "" : text;
   } catch {
     return "";
   }
