@@ -34,10 +34,14 @@ class DashboardPage {
     this.quickActionsHeading = page.getByRole("heading", { name: /quick actions/i }).first();
     this.recentTransactionsHeading = page.getByRole("heading", { name: /recent vishwa transactions/i }).first();
 
-    // Logout lives inside the profile menu, not directly on the dashboard.
-    // VERIFY the profile-menu trigger against the app; the negative session test uses logout().
-    this.profileMenuTrigger = page.getByRole("button", { name: /profile|account|menu|user/i }).last();
-    this.logoutButton = page.getByRole("button", { name: /log ?out|sign ?out/i }).first();
+    // Logout lives in the user menu at the right of the nav bar. The menu is a Tailwind
+    // "group-hover" dropdown: it opens on HOVER over the user avatar, never on click.
+    // Logout itself is a <div> (not a button), so it has no button role to match.
+    this.profileMenuTrigger = page.locator('[class*="userContainer"]').first();
+    this.logoutButton = page.locator('[class*="logOut"]').first();
+    // Logout then asks to confirm: "Are you sure you want to logout?" -> Back | Confirm & Logout.
+    this.logoutConfirmPrompt = page.getByText(/are you sure you want to logout/i);
+    this.confirmLogoutButton = page.getByRole("button", { name: /confirm & logout/i });
   }
 
   /** ASSERTION: the dashboard/top navigation is loaded after login. */
@@ -175,20 +179,32 @@ class DashboardPage {
   }
 
   /**
-   * Logs out. Logout sits inside a profile menu, so open that first if the
-   * logout control isn't already visible.
-   * // VERIFY the profile-menu trigger (profileMenuTrigger) against the live app.
+   * Logs out via the user menu at the right of the nav bar.
+   *
+   * That menu is a CSS "group-hover" dropdown, so it only opens while the pointer is
+   * over the user avatar - clicking the avatar does nothing. Hover it, then click the
+   * Logout item (a <div>, so no button role) without letting the pointer leave the menu.
+   * Logout is a two-step action: it raises a "Are you sure you want to logout?" prompt
+   * that must be confirmed.
    */
   async logout() {
-    if (!(await this.logoutButton.isVisible().catch(() => false))) {
-      if (await this.profileMenuTrigger.isVisible().catch(() => false)) {
-        await this.profileMenuTrigger.click().catch(() => {});
-      }
-    }
-    await expect(this.logoutButton, "Logout control should be visible after opening the profile menu").toBeVisible({
+    await this.waitForNavReady();
+    await expect(this.profileMenuTrigger, "The user menu (avatar) should be visible in the nav bar").toBeVisible({
+      timeout: 30_000,
+    });
+    await this.profileMenuTrigger.hover();
+
+    await expect(this.logoutButton, "Logout should appear in the user menu when the avatar is hovered").toBeVisible({
       timeout: 30_000,
     });
     await this.logoutButton.click();
+
+    // ASSERTION: the logout confirmation prompt is shown, then confirm it.
+    await expect(this.logoutConfirmPrompt, "A logout confirmation prompt should be shown").toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(this.confirmLogoutButton, "'Confirm & Logout' should be available").toBeVisible();
+    await this.confirmLogoutButton.click();
   }
 }
 

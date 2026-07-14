@@ -21,6 +21,8 @@
     "test:billpay": "playwright test tests/*/billPayment.spec.js --headed",
     "test:payee": "playwright test tests/*/addPayee.spec.js --headed",
     "test:biller": "playwright test tests/*/addBiller.spec.js --headed",
+    "test:savedpayee": "playwright test tests/*/transferSavedPayee.spec.js --headed",
+    "test:savedbiller": "playwright test tests/*/billPaymentSavedBiller.spec.js --headed",
     "test:manual-otp": "IB_MANUAL_OTP=true playwright test --headed --workers=1",
     "report": "playwright show-report"
   },

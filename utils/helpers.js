@@ -156,7 +156,11 @@ function offsetDate(baseISO, addDays) {
  * @param {number} [timeoutMs]
  */
 async function assertValidationError(page, pattern, timeoutMs = 20_000) {
-  const err = page.getByText(pattern).first();
+  // Only consider VISIBLE matches. The app keeps hidden copies of a lot of text (the
+  // collapsed nav dropdowns, off-screen panels), so a bare .first() can lock onto a
+  // hidden node that will never become visible and time out even though the real message
+  // is on screen.
+  const err = page.getByText(pattern).locator("visible=true").first();
   await expect(err, `A validation/error message matching ${pattern} should be shown`).toBeVisible({
     timeout: timeoutMs,
   });

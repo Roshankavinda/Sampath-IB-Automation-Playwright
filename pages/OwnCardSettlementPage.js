@@ -32,6 +32,10 @@ class OwnCardSettlementPage {
     this.transferModeSchedule = this.modal.locator('input[name="transferMode"][value="SCHEDULE"]');
     // The button that advances the settlement is "Next" (not "Submit").
     this.submitButton = this.modal.getByRole("button", { name: /^next$/i }).first();
+
+    // Inline amount validation, e.g. "Custom amount must be greater than 0.00". It shows
+    // as soon as the amount is entered - Next is NOT disabled.
+    this.amountError = this.page.getByText(/must be greater than/i).locator("visible=true").first();
   }
 
   /** ASSERTION: the Credit Cards page is displayed. */
@@ -105,6 +109,24 @@ class OwnCardSettlementPage {
       timeout: 15_000,
     });
     await this.submitButton.click();
+  }
+
+  /**
+   * ASSERTION: an invalid settlement amount is rejected inline and the modal stays open.
+   *
+   * The message appears as soon as the amount is typed, so it must be asserted BEFORE
+   * clicking Next - Next closes the modal and returns to the dashboard, taking the
+   * message with it.
+   */
+  async assertAmountValidationShown(pattern = /must be greater than/i) {
+    const error = this.page.getByText(pattern).locator("visible=true").first();
+    await expect(
+      error,
+      `An inline amount validation matching ${pattern} should be shown for an invalid settlement amount`
+    ).toBeVisible({ timeout: 20_000 });
+
+    // ASSERTION: the settlement is not allowed to proceed - the modal stays open.
+    await expect(this.modalHeading, "The Settle modal should stay open when the amount is invalid").toBeVisible();
   }
 }
 

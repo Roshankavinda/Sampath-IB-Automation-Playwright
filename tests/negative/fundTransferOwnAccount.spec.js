@@ -60,14 +60,17 @@ test.describe("Fund Transfer - Own Account - Negative & Validation", () => {
     });
   });
 
-  test("TC_FT_OWN_N03 - Submit stays disabled on an empty form", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N03 - Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
     const ownAccount = await test.step("Open Send Money > Own Account", async () =>
       openOwnAccountForm(page, loggedInDashboard));
 
-    await test.step("With required fields empty, Submit must be disabled", async () => {
-      await expect(ownAccount.submitButton, "Submit should be disabled until required fields are filled").toBeDisabled({
-        timeout: 10_000,
-      });
+    // Submit is not disabled on this form - the app validates on click instead.
+    await test.step("Submit the empty form", async () => {
+      await ownAccount.submitButton.click();
+    });
+
+    await test.step("Validate the app blocks it with required-field messages", async () => {
+      await ownAccount.assertRequiredValidationShown();
     });
   });
 

@@ -29,9 +29,26 @@ class SendMoneyPage {
     await expect(this.subHeading, "Send Money sub-heading should be visible").toBeVisible();
   }
 
+  /**
+   * Opens the Own Account tab.
+   *
+   * The tab renders before React attaches its handler, so a single click is sometimes
+   * swallowed and the form never appears. Retry until the form's From Account dropdown
+   * actually shows up.
+   */
   async selectOwnAccountTab() {
     await expect(this.ownAccountTab, "'Own Account' tab should be visible").toBeVisible({ timeout: 30_000 });
-    await this.ownAccountTab.click();
+    const fromAccount = this.page.locator('select[name="accountFrom"]');
+
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await this.ownAccountTab.click().catch(() => {});
+      const opened = await fromAccount
+        .waitFor({ state: "visible", timeout: 20_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (opened) return;
+    }
+    throw new Error("The 'Own Account' transfer form did not open after selecting the Own Account tab.");
   }
 
   async selectOtherAccountsTab() {

@@ -197,6 +197,30 @@ const newBiller = {
 };
 
 /* ----------------------------------------------------------------
+ * 13. Fund Transfer by a SAVED PAYEE
+ *     (Payees & Billers > Saved Payees > pick the payee > amount > Submit)
+ *     Requires a payee to already exist - use the nickname given in `newPayee`.
+ * ---------------------------------------------------------------- */
+const savedPayeeTransfer = {
+  payee: "PWOtherBank",              // nickname of the saved payee to pay
+  fromAccount: "1018 5010 4310",
+  amount: "100",
+  senderRemark: "PW Saved Payee",
+  beneficiaryRemark: "PW Saved Payee",
+};
+
+/* ----------------------------------------------------------------
+ * 14. Bill Payment by a SAVED BILLER
+ *     (Payees & Billers > Saved Billers > pick the biller > amount > Next)
+ *     Requires a biller to already exist - use the template name in `newBiller`.
+ * ---------------------------------------------------------------- */
+const savedBillerPayment = {
+  biller: "PW Dialog Bill",          // template name of the saved biller to pay
+  fromAccount: "1018 5010 4310",
+  amount: "500",
+};
+
+/* ----------------------------------------------------------------
  *  NEGATIVE / VALIDATION DATA
  *  Each block intentionally triggers a specific validation error so the
  *  spec can assert the app blocks the transaction (before or after OTP).
@@ -209,7 +233,9 @@ const negative = {
       amount: "999999999",
       senderRemark: "PW Neg InsufficientFunds",
       beneficiaryRemark: "PW Neg InsufficientFunds",
-      expectedError: /insufficient|balance|exceed/i,
+      // The app's real message, shown inline under Amount. Kept specific so it cannot be
+      // satisfied by the "Available Balance" label that sits on the same screen.
+      expectedError: /insufficient funds/i,
     },
     zeroAmount: {
       fromAccount: "1018 5010 4310",
@@ -275,7 +301,9 @@ const negative = {
       card: "1071",
       settlementType: "Custom Amount",
       amount: "0",
-      expectedError: /minimum|greater than|amount|valid/i,
+      // The app's real inline message: "Custom amount must be greater than 0.00".
+      // It appears as soon as the amount is typed, before Next is clicked.
+      expectedError: /custom amount must be greater than/i,
     },
   },
 
@@ -308,6 +336,28 @@ const negative = {
       expectedError: /is required/i,
     },
   },
+
+  // Transfer to a saved payee with a zero amount must be blocked.
+  savedPayeeTransfer: {
+    zeroAmount: {
+      payee: "PWOtherBank",
+      fromAccount: "1018 5010 4310",
+      amount: "0",
+      senderRemark: "PW Neg SavedPayee",
+      beneficiaryRemark: "PW Neg SavedPayee",
+      expectedError: /minimum|greater than|amount|valid|required/i,
+    },
+  },
+
+  // Paying a saved biller with a zero amount must be blocked.
+  savedBillerPayment: {
+    zeroAmount: {
+      biller: "PW Dialog Bill",
+      fromAccount: "1018 5010 4310",
+      amount: "0",
+      expectedError: /minimum|greater than|amount|valid|required/i,
+    },
+  },
 };
 
 module.exports = {
@@ -324,5 +374,7 @@ module.exports = {
   billPayments,
   newPayee,
   newBiller,
+  savedPayeeTransfer,
+  savedBillerPayment,
   negative,
 };
