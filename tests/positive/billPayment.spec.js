@@ -23,6 +23,7 @@ test.describe("Bill Payment - Positive", () => {
       await test.step("Navigate to Bill Payment via Quick Actions", async () => {
         await loggedInDashboard.goToBillPayment();
         await billPay.assertLoaded();
+        await billPay.assertCategoriesDisplayed();
       });
 
       await test.step(`Select the "${data.category}" category`, async () => {
@@ -31,6 +32,7 @@ test.describe("Bill Payment - Positive", () => {
 
       await test.step(`Select the "${data.biller}" biller and validate the payment form`, async () => {
         await billPay.selectBiller(data.biller);
+        await billPay.assertPaymentFormValidations();
       });
 
       await test.step("Choose pay-by-account and select the From account", async () => {

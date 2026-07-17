@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains, selectTransferMode, fillDateField } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
  * Send Money > Own Account form (OwnAccount.tsx).
@@ -17,16 +17,15 @@ class OwnAccountPage {
     this.senderRemarkInput = page.locator('input[name="senderRemark"]');
     this.beneficiaryRemarkInput = page.locator('input[name="beneficiaryRemark"]');
     this.transferModeRadios = page.locator('input[name="transferMode"]');
+    // Transfer Mode: One-time Transaction (ONLINE) vs Standing Order/Schedule (SCHEDULE).
+    this.transferModeOnline = page.locator('input[name="transferMode"][value="ONLINE"]');
+    this.transferModeSchedule = page.locator('input[name="transferMode"][value="SCHEDULE"]');
+    this.standingOrderLabel = page.getByText("Standing Order/Schedule", { exact: true }).first();
     this.submitButton = page.getByRole("button", { name: "Submit", exact: true });
     // Submit is NOT disabled on an empty form: the app validates on click and shows
     // inline "<field> is required" messages (To Account / Amount / Sender Remark /
     // Beneficiary Remark are all mandatory).
     this.requiredError = page.getByText(/is required/i).first();
-    // Scheduled / recurring transfer fields (appear after choosing a non-One-time mode).
-    // VERIFY these name attributes against the live app.
-    this.effectiveDateInput = page.locator('input[name="effectiveDate"], input[type="date"]').first();
-    this.endDateInput = page.locator('input[name="endDate"]').first();
-    this.frequencySelect = page.locator('select[name="frequency"]');
   }
 
   /**
@@ -49,9 +48,28 @@ class OwnAccountPage {
     });
   }
 
+  /**
+   * SOFT VALIDATIONS on the loaded form: both account dropdowns are populated with
+   * selectable options and every input/control is present. Soft, so the report lists
+   * all UI problems at once instead of stopping at the first.
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.fromAccountSelect, "From Account");
+    await assertDropdownPopulated(this.toAccountSelect, "To Account");
+    await expect.soft(this.amountInput, "Amount field should be visible").toBeVisible();
+    await expect.soft(this.senderRemarkInput, "Sender Remark field should be visible").toBeVisible();
+    await expect.soft(this.beneficiaryRemarkInput, "Beneficiary Remark field should be visible").toBeVisible();
+    await expect.soft(this.transferModeRadios.first(), "A Transfer Mode option should be visible").toBeVisible();
+    await expect.soft(this.submitButton, "Submit button should be visible").toBeVisible();
+  }
+
   async fillForm(data) {
     await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount);
     await selectOptionByLabelContains(this.toAccountSelect, data.toAccount);
+
+    // SOFT ASSERTION: the chosen source/destination accounts are the ones now selected.
+    await assertSelectedContains(this.fromAccountSelect, data.fromAccount, "From Account");
+    await assertSelectedContains(this.toAccountSelect, data.toAccount, "To Account");
 
     // ASSERTION: From and To accounts must be different.
     const fromVal = await this.fromAccountSelect.inputValue();
@@ -83,24 +101,16 @@ class OwnAccountPage {
   }
 
   /**
-   * Select a transfer mode and, for scheduled/recurring, fill the schedule fields.
-   * @param {"one-time"|"scheduled"|"recurring"} mode
-   * @param {{ effectiveDate?: string, endDate?: string, frequency?: string }} [schedule]
+   * Selects the "Standing Order/Schedule" transfer mode. The schedule detail fields
+   * (start date, frequency, ...) are NOT on this form - they appear in a modal after
+   * Submit (see ScheduleModal). The radios are custom-styled, so click the label:
+   * a forced check() flips the input without firing React's onChange.
    */
-  async setTransferMode(mode, schedule = {}) {
-    if (mode === "one-time") return this.ensureOneTimeTransaction();
-
-    await selectTransferMode(this.transferModeRadios, mode === "recurring" ? "Recurring" : "Scheduled");
-
-    if (schedule.effectiveDate) await fillDateField(this.effectiveDateInput, schedule.effectiveDate);
-    if (mode === "recurring") {
-      if (schedule.frequency && (await this.frequencySelect.isVisible().catch(() => false))) {
-        await selectOptionByLabelContains(this.frequencySelect, schedule.frequency);
-      }
-      if (schedule.endDate && (await this.endDateInput.isVisible().catch(() => false))) {
-        await fillDateField(this.endDateInput, schedule.endDate);
-      }
-    }
+  async selectStandingOrderSchedule() {
+    await this.standingOrderLabel.click();
+    await expect(this.transferModeSchedule, "Standing Order/Schedule mode should be selected").toBeChecked({
+      timeout: 10_000,
+    });
   }
 
   async submit() {

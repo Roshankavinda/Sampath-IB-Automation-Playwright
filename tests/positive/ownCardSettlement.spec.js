@@ -25,6 +25,7 @@ test.describe("Own Card Settlement - Positive", () => {
 
     await test.step("Open the Settle flow and fill the settlement details", async () => {
       await settle.clickSettle();
+      await settle.assertFormValidations();
       await settle.fillSettlement(ownCardSettlement);
     });
 

@@ -24,6 +24,7 @@ test.describe("Fund Transfer - Other Bank - Positive", () => {
     await test.step("Open the 'Other Accounts' tab and validate the form", async () => {
       await sendMoney.selectOtherAccountsTab();
       await otherBank.assertLoaded();
+      await otherBank.assertFormValidations();
     });
 
     await test.step("Select From Account and the destination bank", async () => {

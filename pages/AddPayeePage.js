@@ -1,5 +1,10 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains, getToastText } = require("../utils/helpers");
+const {
+  selectOptionByLabelContains,
+  getToastText,
+  assertDropdownPopulated,
+  assertSelectedContains,
+} = require("../utils/helpers");
 
 /**
  * Add New Payee — Payees & Billers > Saved Payees > "Add New Payee".
@@ -91,14 +96,31 @@ class AddPayeePage {
   }
 
   /**
+   * SOFT VALIDATIONS on the loaded form: the Type and Bank dropdowns are populated with
+   * selectable options. Soft, so both are reported together.
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.typeSelect, "Payee Type");
+    await assertDropdownPopulated(this.bankSelect, "Bank");
+  }
+
+  /**
    * Fills the payee form.
    *
    * Order matters: changing the Bank clears the Account Holder's Name, so both
    * dropdowns are set BEFORE the text fields are typed.
    */
   async fillForm(data) {
-    if (data.type) await selectOptionByLabelContains(this.typeSelect, data.type);
-    if (data.bank) await selectOptionByLabelContains(this.bankSelect, data.bank);
+    if (data.type) {
+      await selectOptionByLabelContains(this.typeSelect, data.type);
+      // SOFT ASSERTION: the chosen payee type is the one selected.
+      await assertSelectedContains(this.typeSelect, data.type, "Payee Type");
+    }
+    if (data.bank) {
+      await selectOptionByLabelContains(this.bankSelect, data.bank);
+      // SOFT ASSERTION: the chosen bank is the one selected.
+      await assertSelectedContains(this.bankSelect, data.bank, "Bank");
+    }
 
     await this.accountNameInput.fill(data.accountName);
     await this.nickNameInput.fill(data.nickName);

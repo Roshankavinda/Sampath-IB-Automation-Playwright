@@ -31,18 +31,29 @@ and every page object asserts key UI elements.
 > comment in the page object, or an inline note in `test-data/testData.js`. Run each flow
 > once in `--headed --slowmo` and adjust the flagged `name`/label values as needed.
 
-### Entering the OTP by hand
+### OTP handling
 
-A real OTP is sent to the registered phone. To type it in yourself instead of using the
-UAT bypass code, run headed with manual-OTP mode — the test pauses at the OTP popup until
-you enter the code and click Confirm:
+- **Login OTP** — always auto-filled with the UAT bypass code. Nothing to do.
+- **Transaction OTP** (fund transfers, bill payments, card settlement, saved payee/biller
+  transfers) — **entered manually by default.** A real OTP is sent to your phone; the test
+  pauses at the OTP popup until you type it in the browser and click Confirm, then
+  continues. Because it pauses, run these headed (all the per-feature `npm run test:*`
+  scripts already pass `--headed`):
 
-```bash
-npm run test:manual-otp                 # whole suite, headed, one worker
-IB_MANUAL_OTP=true npx playwright test tests/positive/fundTransferOwnAccount.spec.js --headed
-```
+  ```bash
+  npm run test:own          # pauses for you to enter the transaction OTP
+  npm run test:savedpayee
+  ```
 
-`IB_MANUAL_OTP_TIMEOUT` (default `180000` ms) controls how long it waits for you.
+  `IB_MANUAL_OTP_TIMEOUT` (default `180000` ms) sets how long it waits for you.
+
+- **Unattended / CI run** — set `IB_MANUAL_OTP=false` to auto-fill the bypass code for
+  transaction OTP too (no pausing):
+
+  ```bash
+  npm run test:auto-otp
+  IB_MANUAL_OTP=false npx playwright test tests/negative --headed
+  ```
 
 ## Project structure
 

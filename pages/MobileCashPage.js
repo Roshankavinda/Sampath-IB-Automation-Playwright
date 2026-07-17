@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
  * Send Money > Mobile Cash form (cardless cash to a receiver's NIC + mobile number).
@@ -62,13 +62,32 @@ class MobileCashPage {
     }
   }
 
+  /**
+   * SOFT VALIDATIONS on the loaded form: the Purpose dropdown is populated and every
+   * receiver field is present. (Mobile Cash has no From-account dropdown - it shows the
+   * primary account as a read-only display card.) Soft, so all UI problems report together.
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.purposeSelect, "Purpose");
+    await expect.soft(this.nicInput, "Receiver's NIC field should be visible").toBeVisible();
+    await expect.soft(this.mobileNumberInput, "Receiver's Mobile Number field should be visible").toBeVisible();
+    await expect.soft(this.reMobileNumberInput, "Re-enter Mobile Number field should be visible").toBeVisible();
+    await expect.soft(this.receiverNameInput, "Receiver's Name field should be visible").toBeVisible();
+    await expect.soft(this.amountInput, "Amount field should be visible").toBeVisible();
+    await expect.soft(this.submitButton, "Submit button should be visible").toBeVisible();
+  }
+
   async fillForm(data) {
     await this.assertFormStillOpen();
     if (data.nic) await this.nicInput.fill(data.nic);
     await this.mobileNumberInput.fill(data.mobileNumber);
     await this.reMobileNumberInput.fill(data.mobileNumber);
     if (data.receiverName) await this.receiverNameInput.fill(data.receiverName);
-    if (data.purpose) await selectOptionByLabelContains(this.purposeSelect, data.purpose);
+    if (data.purpose) {
+      await selectOptionByLabelContains(this.purposeSelect, data.purpose);
+      // SOFT ASSERTION: the chosen purpose is the one selected.
+      await assertSelectedContains(this.purposeSelect, data.purpose, "Purpose");
+    }
     if (data.amount) await this.amountInput.fill(data.amount);
     if (data.remark) await this.remarkInput.fill(data.remark);
 

@@ -24,6 +24,7 @@ test.describe("Stop Card - Positive", () => {
       await test.step("Navigate to Stop Card via Quick Actions", async () => {
         await loggedInDashboard.goToStopCard();
         await stop.assertLoaded();
+        await stop.assertFormValidations();
       });
 
       await test.step(`Fill the Stop Card details for a ${label} card`, async () => {

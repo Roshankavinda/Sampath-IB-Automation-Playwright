@@ -24,6 +24,7 @@ test.describe("Fund Transfer - Other Bank Credit Card - Positive", () => {
     await test.step("Open the 'Other Credit Cards' tab and validate the form", async () => {
       await sendMoney.selectOtherCreditCardsTab();
       await cards.assertLoaded();
+      await cards.assertFormValidations();
     });
 
     await test.step("Fill the credit card payment details", async () => {

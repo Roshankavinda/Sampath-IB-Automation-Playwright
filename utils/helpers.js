@@ -186,6 +186,42 @@ async function submitAndExpectRejection(page, popup, expectedError, otp) {
 }
 
 /**
+ * SOFT ASSERTION: a native <select> is visible and populated with at least one real
+ * (non-placeholder) option. Catches the common "dropdown rendered but its list never
+ * loaded" case that a plain visibility check misses.
+ *
+ * Soft, so a form's whole set of dropdown checks is reported together.
+ * @param {import('@playwright/test').Locator} select
+ * @param {string} label  human name for the dropdown, used in the failure message
+ */
+async function assertDropdownPopulated(select, label) {
+  await expect.soft(select, `${label} dropdown should be visible`).toBeVisible();
+  const realOptions = await select
+    .evaluate((el) =>
+      Array.from(el.options).filter((o) => o.value && !/^\s*(select|choose)\b/i.test(o.textContent || "")).length
+    )
+    .catch(() => 0);
+  expect
+    .soft(realOptions, `${label} dropdown should list at least one selectable option (the values must load)`)
+    .toBeGreaterThan(0);
+}
+
+/**
+ * SOFT ASSERTION: the option currently selected in a <select> matches `partial` (the
+ * value the test asked to select). Confirms the selection actually took - e.g. the
+ * source account really is the one chosen - rather than just that selectOption() ran.
+ * @param {import('@playwright/test').Locator} select
+ * @param {string} partial  the label fragment that was selected (e.g. an account number)
+ * @param {string} label  human name for the dropdown, used in the failure message
+ */
+async function assertSelectedContains(select, partial, label) {
+  const selected = (await select.locator("option:checked").first().innerText().catch(() => "")).trim();
+  expect
+    .soft(selected.toLowerCase(), `${label} should have "${partial}" selected (currently "${selected}")`)
+    .toContain(String(partial).toLowerCase());
+}
+
+/**
  * Shared afterEach helper: on a failing test, capture the app's toast message and
  * attach it to the report as evidence. Keeps every spec's afterEach a one-liner.
  * @param {import('@playwright/test').Page} page
@@ -208,5 +244,7 @@ module.exports = {
   offsetDate,
   assertValidationError,
   submitAndExpectRejection,
+  assertDropdownPopulated,
+  assertSelectedContains,
   attachToastOnFailure,
 };

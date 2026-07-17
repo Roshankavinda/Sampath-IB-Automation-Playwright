@@ -19,6 +19,7 @@ test.describe("Add New Payee - Positive", () => {
 
     await test.step("Open 'Add New Payee' and validate the form", async () => {
       await payee.openAddPayee();
+      await payee.assertFormValidations();
     });
 
     await test.step("Fill the payee details", async () => {

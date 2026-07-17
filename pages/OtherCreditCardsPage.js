@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
  * Send Money > Other Credit Cards — pay another bank's credit card by card number/CAN.
@@ -46,17 +46,39 @@ class OtherCreditCardsPage {
       .catch(() => {});
   }
 
+  /**
+   * SOFT VALIDATIONS on the loaded form: the card-issuing Bank and (async) From Account
+   * dropdowns are populated and the card/amount fields are present. Soft, so all UI
+   * problems are reported together.
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.bankSelect, "Bank (card issuer)");
+    if (await this.fromAccountSelect.isVisible().catch(() => false)) {
+      await assertDropdownPopulated(this.fromAccountSelect, "From Account");
+    }
+    await expect.soft(this.cardNumberInput, "Card Number (CAN) field should be visible").toBeVisible();
+    await expect.soft(this.reCardNumberInput, "Re-enter Card Number field should be visible").toBeVisible();
+    await expect.soft(this.amountInput, "Amount field should be visible").toBeVisible();
+    await expect.soft(this.submitButton, "Submit button should be visible").toBeVisible();
+  }
+
   async fillForm(data) {
     // From Account defaults to primary once loaded; select a specific one only if present.
     if (data.fromAccount && (await this.fromAccountSelect.isVisible().catch(() => false))) {
       await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount).catch(() => {});
+      // SOFT ASSERTION: the source account is the one selected.
+      await assertSelectedContains(this.fromAccountSelect, data.fromAccount, "From Account");
     }
 
     await this.cardNumberInput.fill(data.cardNumber);
     await this.reCardNumberInput.fill(data.cardNumber);
     if (data.cardName) await this.cardNameInput.fill(data.cardName);
     // The card-issuing bank is required (defaults to "Select Bank").
-    if (data.bank) await selectOptionByLabelContains(this.bankSelect, data.bank);
+    if (data.bank) {
+      await selectOptionByLabelContains(this.bankSelect, data.bank);
+      // SOFT ASSERTION: the chosen issuing bank is the one selected.
+      await assertSelectedContains(this.bankSelect, data.bank, "Bank (card issuer)");
+    }
     await this.amountInput.fill(data.amount);
     if (data.purpose && (await this.purposeSelect.isVisible().catch(() => false))) {
       await selectOptionByLabelContains(this.purposeSelect, data.purpose);

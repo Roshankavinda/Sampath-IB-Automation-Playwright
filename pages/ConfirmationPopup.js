@@ -61,12 +61,15 @@ class ConfirmationPopup {
   /**
    * Enters the transaction OTP and confirms.
    *
-   * A real OTP is sent to the registered phone. Set IB_MANUAL_OTP=true (and run headed)
-   * to type it in yourself: the test then waits for you to enter it and press Confirm.
-   * Otherwise the OTP from test data is filled automatically (UAT bypass code).
+   * TRANSACTION OTP IS MANUAL BY DEFAULT: a real OTP is sent to the registered phone, so
+   * the test pauses (run headed) for you to type it in and click Confirm. Only the LOGIN
+   * OTP uses the UAT bypass code - it is handled separately in LoginPage, not here.
+   *
+   * For a fully unattended/CI run, set IB_MANUAL_OTP=false to auto-fill the bypass code
+   * here too.
    */
   async enterOtpAndConfirm(otp) {
-    if (process.env.IB_MANUAL_OTP === "true") return this.waitForManualOtp();
+    if (process.env.IB_MANUAL_OTP !== "false") return this.waitForManualOtp();
 
     await fillOtpBoxes(this.page, otp);
     await expect(this.confirmButton, "Confirm button should be enabled after entering OTP").toBeEnabled({
@@ -93,8 +96,10 @@ class ConfirmationPopup {
       .catch(() => false);
     if (!done) {
       throw new Error(
-        `Timed out after ${Math.round(timeout / 1000)}s waiting for the OTP to be entered and confirmed manually. ` +
-          "Run headed (npm run test:manual-otp) so the browser is visible, and raise IB_MANUAL_OTP_TIMEOUT if needed."
+        `Timed out after ${Math.round(timeout / 1000)}s waiting for the transaction OTP to be entered and confirmed ` +
+          "manually. Run headed so the browser is visible (the per-feature npm scripts already pass --headed), and " +
+          "raise IB_MANUAL_OTP_TIMEOUT if you need longer. For an unattended run, set IB_MANUAL_OTP=false to use the " +
+          "bypass code instead."
       );
     }
   }

@@ -24,6 +24,7 @@ test.describe("Fund Transfer - Mobile Cash - Positive", () => {
     await test.step("Open the 'Mobile Cash' tab and validate the form", async () => {
       await sendMoney.selectMobileCashTab();
       await mobile.assertLoaded();
+      await mobile.assertFormValidations();
     });
 
     await test.step("Fill the Mobile Cash details", async () => {

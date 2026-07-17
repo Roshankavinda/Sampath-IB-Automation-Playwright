@@ -23,6 +23,7 @@ test.describe("Fund Transfer - Own Account - Positive", () => {
     await test.step("Open the 'Own Account' tab and validate the form", async () => {
       await sendMoney.selectOwnAccountTab();
       await ownAccount.assertLoaded();
+      await ownAccount.assertFormValidations();
     });
 
     await test.step("Fill the own account transfer details", async () => {

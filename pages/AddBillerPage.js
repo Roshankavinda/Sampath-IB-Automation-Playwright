@@ -1,5 +1,10 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains, getToastText } = require("../utils/helpers");
+const {
+  selectOptionByLabelContains,
+  getToastText,
+  assertDropdownPopulated,
+  assertSelectedContains,
+} = require("../utils/helpers");
 
 /**
  * Add New Biller — Payees & Billers > Saved Billers > "Add New Biller".
@@ -85,11 +90,22 @@ class AddBillerPage {
   }
 
   /**
+   * SOFT VALIDATIONS on the loaded form: the Category dropdown is populated with
+   * selectable options. (The Biller dropdown only fills after a category is chosen, so it
+   * is validated in selectCategoryAndBiller instead.)
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.categorySelect, "Category");
+  }
+
+  /**
    * Picks the category, then the biller (the biller list is fetched per category, so it
    * is only populated after the category is chosen).
    */
   async selectCategoryAndBiller(category, biller) {
     await selectOptionByLabelContains(this.categorySelect, category);
+    // SOFT ASSERTION: the chosen category is the one selected.
+    await assertSelectedContains(this.categorySelect, category, "Category");
 
     // The biller options arrive asynchronously once the category is set.
     await expect
@@ -100,6 +116,8 @@ class AddBillerPage {
       .toBeGreaterThan(1);
 
     await selectOptionByLabelContains(this.billerSelect, biller);
+    // SOFT ASSERTION: the chosen biller is the one selected.
+    await assertSelectedContains(this.billerSelect, biller, "Biller");
   }
 
   /**

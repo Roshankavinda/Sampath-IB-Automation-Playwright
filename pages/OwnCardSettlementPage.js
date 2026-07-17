@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
  * Own Card Settlement — settle your OWN Sampath credit card.
@@ -71,6 +71,26 @@ class OwnCardSettlementPage {
   }
 
   /**
+   * SOFT VALIDATIONS on the open Settle modal: the funding-account dropdown is populated
+   * and the three payment-type options + One-time transfer mode are present. Soft, so
+   * all UI problems in the modal are reported together. Call after clickSettle().
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.fundingAccountSelect, "Funding Account");
+    await expect
+      .soft(this.modal.getByText(/minimum payment/i).first(), "'Minimum Payment' option should be shown")
+      .toBeVisible();
+    await expect
+      .soft(this.modal.getByText(/last statement o\/s/i).first(), "'Last Statement O/S' option should be shown")
+      .toBeVisible();
+    await expect
+      .soft(this.modal.getByText(/custom amount/i).first(), "'Custom Amount' option should be shown")
+      .toBeVisible();
+    await expect.soft(this.transferModeOnline, "One-time Transaction option should be present").toBeAttached();
+    await expect.soft(this.submitButton, "'Next' button should be visible").toBeVisible();
+  }
+
+  /**
    * Fills the settlement modal:
    *  - funding account (select[name="account"], matched by partial),
    *  - payment type box ("Minimum Payment" | "Last Statement O/S" | "Custom Amount"),
@@ -84,6 +104,8 @@ class OwnCardSettlementPage {
 
     if (data.fromAccount) {
       await selectOptionByLabelContains(this.fundingAccountSelect, data.fromAccount).catch(() => {});
+      // SOFT ASSERTION: the chosen funding account is the one selected.
+      await assertSelectedContains(this.fundingAccountSelect, data.fromAccount, "Funding Account");
     }
 
     const type = data.settlementType || "Minimum Payment";

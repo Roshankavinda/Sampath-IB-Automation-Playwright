@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains, selectTransferMode, fillDateField } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
  * Send Money > Other Accounts form. Used for BOTH:
@@ -20,11 +20,10 @@ class OtherBankTransferPage {
     this.senderRemarkInput = page.locator('input[name="senderRemark"]');
     this.beneficiaryRemarkInput = page.locator('input[name="beneficiaryRemark"]');
     this.transferModeRadios = page.locator('input[name="transferMode"]');
+    // Transfer Mode: One-time Transaction (ONLINE) vs Standing Order/Schedule (SCHEDULE).
+    this.transferModeSchedule = page.locator('input[name="transferMode"][value="SCHEDULE"]');
+    this.standingOrderLabel = page.getByText("Standing Order/Schedule", { exact: true }).first();
     this.submitButton = page.getByRole("button", { name: "Submit", exact: true });
-    // Scheduled / recurring transfer fields. VERIFY name attributes against the live app.
-    this.effectiveDateInput = page.locator('input[name="effectiveDate"], input[type="date"]').first();
-    this.endDateInput = page.locator('input[name="endDate"]').first();
-    this.frequencySelect = page.locator('select[name="frequency"]');
   }
 
   /** ASSERTION: the Other Accounts form is displayed. */
@@ -44,6 +43,22 @@ class OtherBankTransferPage {
   }
 
   /**
+   * SOFT VALIDATIONS on the loaded form: the Bank and (async) From Account dropdowns are
+   * populated, and the destination account + amount fields are present. Soft, so all UI
+   * problems are reported together.
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.bankSelect, "Bank");
+    // From Account loads asynchronously and may still be a skeleton; check it softly.
+    if (await this.fromAccountSelect.isVisible().catch(() => false)) {
+      await assertDropdownPopulated(this.fromAccountSelect, "From Account");
+    }
+    await expect.soft(this.toAccountNumberInput, "To Account Number field should be visible").toBeVisible();
+    await expect.soft(this.amountInput, "Amount field should be visible").toBeVisible();
+    await expect.soft(this.submitButton, "Submit button should be visible").toBeVisible();
+  }
+
+  /**
    * Selects the From Account once it has loaded. The dropdown loads asynchronously
    * (skeleton) and defaults to the primary account, so if it hasn't resolved we fall
    * back to that default rather than failing.
@@ -53,11 +68,17 @@ class OtherBankTransferPage {
       .waitFor({ state: "visible", timeout: 30_000 })
       .then(() => true)
       .catch(() => false);
-    if (ready) await selectOptionByLabelContains(this.fromAccountSelect, partial).catch(() => {});
+    if (ready) {
+      await selectOptionByLabelContains(this.fromAccountSelect, partial).catch(() => {});
+      // SOFT ASSERTION: the source account is the one selected.
+      await assertSelectedContains(this.fromAccountSelect, partial, "From Account");
+    }
   }
 
   async selectBank(partial) {
     await selectOptionByLabelContains(this.bankSelect, partial);
+    // SOFT ASSERTION: the chosen bank is the one selected.
+    await assertSelectedContains(this.bankSelect, partial, "Bank");
   }
 
   /**
@@ -86,12 +107,21 @@ class OtherBankTransferPage {
     await this.toAccountNumberInput.fill(accountNumber);
     // The name is fetched from core banking for Sampath accounts; blur to trigger it.
     await this.toAccountNumberInput.press("Tab");
+    // Wait for the REAL beneficiary name, not the "Retrieving beneficiary name. Please
+    // wait..." loading placeholder (which also has length > 0 and would pass a naive poll).
     await expect
-      .poll(async () => (await this.beneficiaryNameInput.inputValue().catch(() => "")).trim().length, {
-        timeout: 20_000,
-        message: "Beneficiary name should auto-fetch for a valid Sampath (intra-bank) account",
-      })
-      .toBeGreaterThan(0);
+      .poll(
+        async () => {
+          const v = (await this.beneficiaryNameInput.inputValue().catch(() => "")).trim();
+          return v && !/retriev|please wait|loading|fetching/i.test(v) ? v : "";
+        },
+        {
+          timeout: 30_000,
+          message:
+            "Beneficiary name should auto-fetch (a real name, not the loading placeholder) for a valid Sampath account",
+        }
+      )
+      .not.toBe("");
   }
 
   async fillAmountAndDetails(data) {
@@ -120,24 +150,16 @@ class OtherBankTransferPage {
   }
 
   /**
-   * Select a transfer mode and, for scheduled/recurring, fill the schedule fields.
-   * @param {"one-time"|"scheduled"|"recurring"} mode
-   * @param {{ effectiveDate?: string, endDate?: string, frequency?: string }} [schedule]
+   * Selects the "Standing Order/Schedule" transfer mode so the transfer is scheduled. The
+   * schedule detail fields (start date, frequency, ...) are NOT on this form - they appear
+   * in a modal after Submit (see ScheduleModal). The radios are custom-styled, so click the
+   * label; a forced check() flips the input without firing React's onChange.
    */
-  async setTransferMode(mode, schedule = {}) {
-    if (mode === "one-time") return this.ensureOneTimeTransaction();
-
-    await selectTransferMode(this.transferModeRadios, mode === "recurring" ? "Recurring" : "Scheduled");
-
-    if (schedule.effectiveDate) await fillDateField(this.effectiveDateInput, schedule.effectiveDate);
-    if (mode === "recurring") {
-      if (schedule.frequency && (await this.frequencySelect.isVisible().catch(() => false))) {
-        await selectOptionByLabelContains(this.frequencySelect, schedule.frequency);
-      }
-      if (schedule.endDate && (await this.endDateInput.isVisible().catch(() => false))) {
-        await fillDateField(this.endDateInput, schedule.endDate);
-      }
-    }
+  async selectStandingOrderSchedule() {
+    await this.standingOrderLabel.click();
+    await expect(this.transferModeSchedule, "Standing Order/Schedule mode should be selected").toBeChecked({
+      timeout: 10_000,
+    });
   }
 
   async submit() {

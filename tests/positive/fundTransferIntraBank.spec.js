@@ -24,6 +24,7 @@ test.describe("Fund Transfer - Intra Bank (Sampath) - Positive", () => {
     await test.step("Open the 'Other Accounts' tab and validate the form", async () => {
       await sendMoney.selectOtherAccountsTab();
       await intra.assertLoaded();
+      await intra.assertFormValidations();
     });
 
     await test.step("Select From Account and choose Sampath Bank", async () => {

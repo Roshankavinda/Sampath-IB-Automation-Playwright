@@ -23,7 +23,8 @@ test.describe("Fund Transfer by Saved Payee - Positive", () => {
       await savedPayee.selectSavedPayee(savedPayeeTransfer.payee);
     });
 
-    await test.step("Fill the transfer amount and remarks", async () => {
+    await test.step("Validate the transfer form, then fill amount and remarks", async () => {
+      await savedPayee.assertTransferFormValidations();
       await savedPayee.fillTransfer(savedPayeeTransfer);
       await savedPayee.ensureOneTimeTransaction();
     });

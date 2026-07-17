@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
  * Quick Actions > Stop Card — block a Credit / Debit / Web card.
@@ -27,6 +27,20 @@ class StopCardPage {
     await expect(this.cardSelect, "Stop Card: card dropdown should be visible").toBeVisible({ timeout: 30_000 });
   }
 
+  /**
+   * SOFT VALIDATIONS on the loaded form: the card dropdown is populated and the reason
+   * control + submit are present. Soft, so all UI problems report together.
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.cardSelect, "Card");
+    if (await this.reasonSelect.isVisible().catch(() => false)) {
+      await assertDropdownPopulated(this.reasonSelect, "Reason");
+    } else {
+      await expect.soft(this.reasonInput, "Reason field should be visible").toBeVisible();
+    }
+    await expect.soft(this.submitButton, "Submit button should be visible").toBeVisible();
+  }
+
   /** Chooses the card type (Credit / Debit / Web) from a tab or radio group. */
   async selectCardType(cardType) {
     if (!cardType) return;
@@ -43,10 +57,14 @@ class StopCardPage {
   async fillForm(data) {
     await this.selectCardType(data.cardType);
     await selectOptionByLabelContains(this.cardSelect, data.card);
+    // SOFT ASSERTION: the chosen card is the one selected.
+    await assertSelectedContains(this.cardSelect, data.card, "Card");
 
     if (data.reason) {
       if (await this.reasonSelect.isVisible().catch(() => false)) {
         await selectOptionByLabelContains(this.reasonSelect, data.reason);
+        // SOFT ASSERTION: the chosen reason is the one selected.
+        await assertSelectedContains(this.reasonSelect, data.reason, "Reason");
       } else if (await this.reasonInput.isVisible().catch(() => false)) {
         await this.reasonInput.fill(data.reason);
       }

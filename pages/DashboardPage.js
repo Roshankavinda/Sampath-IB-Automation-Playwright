@@ -170,6 +170,13 @@ class DashboardPage {
     await this.openQuickAction("Stop Card");
   }
 
+  /** Top-nav "Manage Schedules" -> the Schedule Management page (/dashboard/manage-schedule). */
+  async goToManageSchedules() {
+    await this.waitForNavReady();
+    await expect(this.manageSchedulesNav, "'Manage Schedules' nav should be visible").toBeVisible({ timeout: 60_000 });
+    await this.manageSchedulesNav.click();
+  }
+
   /** Clicks a top-nav item by its visible text. */
   async openTopNav(itemName) {
     await this.waitForNavReady();

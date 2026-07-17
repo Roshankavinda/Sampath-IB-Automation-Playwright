@@ -23,7 +23,7 @@
     "test:biller": "playwright test tests/*/addBiller.spec.js --headed",
     "test:savedpayee": "playwright test tests/*/transferSavedPayee.spec.js --headed",
     "test:savedbiller": "playwright test tests/*/billPaymentSavedBiller.spec.js --headed",
-    "test:manual-otp": "IB_MANUAL_OTP=true playwright test --headed --workers=1",
+    "test:auto-otp": "IB_MANUAL_OTP=false playwright test",
     "report": "playwright show-report"
   },
   "keywords": ["playwright", "pom", "automation", "sampath", "banking"],

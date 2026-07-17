@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
  * Bill Payment page (BillPaymentSection.tsx / BillPaymentForm.tsx).
@@ -44,6 +44,28 @@ class BillPaymentPage {
     await expect(this.allCategoriesHeading, "'All Categories' section should be visible on Bill Payment").toBeVisible({
       timeout: 60_000,
     });
+  }
+
+  /**
+   * SOFT VALIDATION: the category picker actually displays its tiles (the list is served
+   * slowly, so this confirms values are shown, not just that the section rendered).
+   */
+  async assertCategoriesDisplayed() {
+    await this.categoryTiles.first().waitFor({ state: "visible", timeout: 90_000 }).catch(() => {});
+    const count = await this.categoryTiles.count().catch(() => 0);
+    expect.soft(count, "The Bill Payment category tiles should be displayed").toBeGreaterThan(0);
+  }
+
+  /**
+   * SOFT VALIDATIONS on the payment form (after a biller is chosen): the Pay From account
+   * dropdown is populated and the amount + reference fields are present. Soft, so all UI
+   * problems report together.
+   */
+  async assertPaymentFormValidations() {
+    await assertDropdownPopulated(this.fromAccountSelect, "Pay From account");
+    await expect.soft(this.referenceInput, "The biller's reference field should be visible").toBeVisible();
+    await expect.soft(this.amountInput, "Amount field should be visible").toBeVisible();
+    await expect.soft(this.nextButton, "Next button should be visible").toBeVisible();
   }
 
   /**
@@ -93,6 +115,8 @@ class BillPaymentPage {
       await byAccount.check({ force: true }).catch(() => {});
     }
     await selectOptionByLabelContains(this.fromAccountSelect, fromAccountPartial);
+    // SOFT ASSERTION: the chosen Pay From account is the one selected.
+    await assertSelectedContains(this.fromAccountSelect, fromAccountPartial, "Pay From account");
   }
 
   /** Fills the biller's reference field and its "Re Enter" twin with the same value. */
@@ -140,6 +164,20 @@ class BillPaymentPage {
     if ((await oneTime.count()) > 0 && !(await oneTime.isChecked().catch(() => false))) {
       await oneTime.check({ force: true }).catch(() => {});
     }
+  }
+
+  /**
+   * Selects the "Standing Order/Schedule" mode so the payment is scheduled. The schedule
+   * detail fields (start date, frequency, number of payments) are NOT on this form - they
+   * appear in a modal after Next (see ScheduleModal). The radios are custom-styled, so
+   * click the label; a forced check() flips the input without firing React's onChange.
+   */
+  async selectStandingOrderSchedule() {
+    await this.page.getByText("Standing Order/Schedule", { exact: true }).first().click();
+    await expect(
+      this.page.locator('input[name="transferMode"][value="SCHEDULE"]'),
+      "Standing Order/Schedule mode should be selected"
+    ).toBeChecked({ timeout: 10_000 });
   }
 
   /** Clicks "Next" to submit the payment form and move to the confirmation/OTP step. */

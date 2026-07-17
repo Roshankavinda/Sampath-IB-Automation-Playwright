@@ -23,7 +23,8 @@ test.describe("Bill Payment by Saved Biller - Positive", () => {
       await savedBiller.selectSavedBiller(savedBillerPayment.biller);
     });
 
-    await test.step("Fill the funding account and amount", async () => {
+    await test.step("Validate the payment form, then fill funding account and amount", async () => {
+      await savedBiller.assertPaymentFormValidations();
       await savedBiller.fillPayment(savedBillerPayment);
     });
 

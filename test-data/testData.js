@@ -202,11 +202,13 @@ const newBiller = {
  *     Requires a payee to already exist - use the nickname given in `newPayee`.
  * ---------------------------------------------------------------- */
 const savedPayeeTransfer = {
-  payee: "PWOtherBank",              // nickname of the saved payee to pay
-  fromAccount: "1018 5010 4310",
-  amount: "100",
-  senderRemark: "PW Saved Payee",
-  beneficiaryRemark: "PW Saved Payee",
+  // Nickname as shown in the Saved Payees table (row: 9901234561 / Test Name User /
+  // Roshan Test / TEST BANK B / Other Bank Transfer).
+  payee: "Roshan Test",
+  fromAccount: "1018 5010 4310",     // select[name="debitAccount"]
+  amount: "100",                     // input[name="tranList.0.amount"]
+  purpose: "Wages & Salaries",       // select[name="tranList.0.purpose"]
+  beneficiaryRemark: "PW Saved Payee", // input[name="tranList.0.beneficiaryRemarks"]
 };
 
 /* ----------------------------------------------------------------
@@ -218,6 +220,104 @@ const savedBillerPayment = {
   biller: "PW Dialog Bill",          // template name of the saved biller to pay
   fromAccount: "1018 5010 4310",
   amount: "500",
+};
+
+/* ----------------------------------------------------------------
+ * 15. Schedule Payment - Fund Transfer (Standing Order/Schedule)
+ *     Covers 3 flows: Own Account, Intra Bank (Sampath), Other Bank.
+ *     Flow: fill the transfer -> Standing Order/Schedule -> Submit -> schedule modal
+ *     (Start Date defaults to tomorrow) -> frequency (+ schedule type / number for
+ *     recurring) -> Submit -> OTP.
+ *     Each spec merges the flow's `base` with a schedule config (`single`/`recurring`).
+ * ---------------------------------------------------------------- */
+const scheduledTransfer = {
+  // Per-flow base transfer details (the same fields the non-scheduled transfers use).
+  own: {
+    base: {
+      fromAccount: "1018 5010 4310",
+      toAccount: "1018 5525 0495",
+      amount: "500",
+      senderRemark: "PW Sched Own",
+      beneficiaryRemark: "PW Sched Own",
+    },
+  },
+  intra: {
+    base: {
+      fromAccount: "1018 5010 4310",
+      bank: "Sampath",                 // beneficiary name auto-fetched for Sampath accounts
+      // VERIFY: this account must resolve to a real beneficiary name via the core-banking
+      // lookup. "101358394971" does NOT resolve in UAT (the name stays "Retrieving
+      // beneficiary name..." / empty), which blocks the intra flow. Replace with a valid
+      // Sampath account number that returns a name.
+      toAccountNumber: "101358394971",
+      amount: "500",
+      purpose: "Wages & Salaries",
+      senderRemark: "PW Sched Intra",
+      beneficiaryRemark: "PW Sched Intra",
+    },
+  },
+  other: {
+    base: {
+      fromAccount: "1018 5010 4310",
+      bank: "TEST BANK B",             // beneficiary name typed manually for other banks
+      toAccountNumber: "9901234561",
+      beneficiaryName: "Test User",
+      amount: "500",
+      purpose: "Wages & Salaries",
+      beneficiaryRemark: "PW Sched Other",
+    },
+  },
+  // Shared schedule configs, merged onto a flow's base.
+  single: { frequency: "One Time" },   // a single future-dated transfer
+  recurring: {
+    frequency: "Monthly",              // repeats monthly
+    scheduleType: "Number of Transfers", // "Number of Transfers" | "End Date"
+    numberOfTransactions: "3",
+  },
+};
+
+/* ----------------------------------------------------------------
+ * 16. Schedule Payment - Bill Payment (Dialog, Standing Order/Schedule)
+ *     Same as Bill Payment but with Standing Order/Schedule -> schedule modal
+ *     (no schedule-type option; just Start Date + Frequency + Number of Payments).
+ * ---------------------------------------------------------------- */
+const scheduledBillPayment = {
+  single: {
+    category: "Telephone",
+    biller: "Dialog Mobile",
+    fromAccount: "1018 5010 4310",
+    referenceFieldName: "Your GSM Phone Number",
+    referenceValue: "0771234567",
+    amount: "500",
+    frequency: "One Time",
+  },
+  recurring: {
+    category: "Telephone",
+    biller: "Dialog Mobile",
+    fromAccount: "1018 5010 4310",
+    referenceFieldName: "Your GSM Phone Number",
+    referenceValue: "0771234567",
+    amount: "500",
+    frequency: "Monthly",
+    numberOfTransactions: "3",
+  },
+};
+
+/* ----------------------------------------------------------------
+ * 17. Manage Schedules (top-nav "Manage Schedules")
+ *     Scheduled Transfers / Scheduled Payments tabs, each row with actions:
+ *     Pay Now | Skip | Stop | Modify.
+ *     `identifier` optionally matches a specific schedule row; leave "" to act on the
+ *     first row. NOTE: the lists are currently empty (schedule creation is backend-blocked).
+ * ---------------------------------------------------------------- */
+const manageScheduleTransfer = {
+  identifier: "",                    // e.g. a nickname / account / amount shown in the row
+  modify: { amount: "600" },         // used by the Modify action (VERIFY the edit form)
+};
+
+const manageScheduleBiller = {
+  identifier: "",                    // e.g. the biller/template name shown in the row
+  modify: { amount: "600" },
 };
 
 /* ----------------------------------------------------------------
@@ -340,12 +440,12 @@ const negative = {
   // Transfer to a saved payee with a zero amount must be blocked.
   savedPayeeTransfer: {
     zeroAmount: {
-      payee: "PWOtherBank",
+      payee: "Roshan Test",
       fromAccount: "1018 5010 4310",
       amount: "0",
-      senderRemark: "PW Neg SavedPayee",
+      purpose: "Wages & Salaries",
       beneficiaryRemark: "PW Neg SavedPayee",
-      expectedError: /minimum|greater than|amount|valid|required/i,
+      expectedError: /greater than|invalid|required/i,
     },
   },
 
@@ -356,6 +456,33 @@ const negative = {
       fromAccount: "1018 5010 4310",
       amount: "0",
       expectedError: /minimum|greater than|amount|valid|required/i,
+    },
+  },
+
+  // Scheduled fund transfer with NO frequency chosen must be blocked in the modal.
+  scheduledTransfer: {
+    noFrequency: {
+      fromAccount: "1018 5010 4310",
+      toAccount: "1018 5525 0495",
+      amount: "500",
+      senderRemark: "PW Neg Sched",
+      beneficiaryRemark: "PW Neg Sched",
+      // frequency intentionally omitted (left as "Select Frequency")
+      expectedError: /frequency|required|select/i,
+    },
+  },
+
+  // Scheduled bill payment with NO frequency chosen must be blocked in the modal.
+  scheduledBillPayment: {
+    noFrequency: {
+      category: "Telephone",
+      biller: "Dialog Mobile",
+      fromAccount: "1018 5010 4310",
+      referenceFieldName: "Your GSM Phone Number",
+      referenceValue: "0771234567",
+      amount: "500",
+      // frequency intentionally omitted
+      expectedError: /frequency|required|select/i,
     },
   },
 };
@@ -376,5 +503,9 @@ module.exports = {
   newBiller,
   savedPayeeTransfer,
   savedBillerPayment,
+  scheduledTransfer,
+  scheduledBillPayment,
+  manageScheduleTransfer,
+  manageScheduleBiller,
   negative,
 };

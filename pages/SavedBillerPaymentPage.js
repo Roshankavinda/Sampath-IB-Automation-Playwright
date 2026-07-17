@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
  * Bill Payment by a SAVED BILLER.
@@ -75,10 +75,23 @@ class SavedBillerPaymentPage {
     ).toBeVisible({ timeout: 30_000 });
   }
 
+  /**
+   * SOFT VALIDATIONS on the payment form (after a saved biller is chosen): the Pay From
+   * account dropdown is populated and the amount + submit controls are present. Soft, so
+   * all UI problems report together.
+   */
+  async assertPaymentFormValidations() {
+    await assertDropdownPopulated(this.fromAccountSelect, "Pay From account");
+    await expect.soft(this.amountInput, "Amount field should be visible").toBeVisible();
+    await expect.soft(this.nextButton, "Next button should be visible").toBeVisible();
+  }
+
   /** Fills the funding account and amount; the biller + reference come from the template. */
   async fillPayment(data) {
     if (data.fromAccount) {
       await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount).catch(() => {});
+      // SOFT ASSERTION: the chosen Pay From account is the one selected.
+      await assertSelectedContains(this.fromAccountSelect, data.fromAccount, "Pay From account");
     }
     // A saved biller may carry a fixed amount, so only type when the field is editable.
     if (data.amount && (await this.amountInput.isEditable().catch(() => false))) {

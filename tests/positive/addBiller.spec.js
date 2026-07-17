@@ -19,6 +19,7 @@ test.describe("Add New Biller - Positive", () => {
 
     await test.step("Open 'Add New Biller' and validate the form", async () => {
       await biller.openAddBiller();
+      await biller.assertFormValidations();
     });
 
     await test.step(`Select the "${newBiller.category}" category and the "${newBiller.biller}" biller`, async () => {
