@@ -152,6 +152,21 @@ class DashboardPage {
     await this.openNavDropdownItem(this.myAccountsNav, "Credit Cards");
   }
 
+  /** My Accounts > Loans (used by Loan Settlement). */
+  async goToLoans() {
+    await this.openNavDropdownItem(this.myAccountsNav, "Loans");
+  }
+
+  /** Dashboard Quick Actions tile "Open New Fixed Deposit" -> /dashboard/open-fd. */
+  async goToOpenFixedDeposit() {
+    await this.waitForNavReady();
+    const tile = this.page.getByRole("button", { name: /Fixed Deposit/i }).first();
+    await expect(tile, "'Open New Fixed Deposit' tile should be visible on the dashboard").toBeVisible({
+      timeout: 60_000,
+    });
+    await tile.click();
+  }
+
   async goToBillPayment() {
     await this.openQuickAction("Bill Payment");
   }

@@ -20,7 +20,7 @@ require("dotenv").config();
 const credentials = {
   // Set IB_USERNAME / IB_PASSWORD / IB_OTP in your local .env file (see .env.example).
   username: process.env.IB_USERNAME || "gsuser4",
-  password: process.env.IB_PASSWORD || "Hoax@1234",
+  password: process.env.IB_PASSWORD || "Hoax@666",
   otp: process.env.IB_OTP || "111111", // Login & transaction OTP (bypassed in UAT)
 };
 
@@ -321,6 +321,36 @@ const manageScheduleBiller = {
 };
 
 /* ----------------------------------------------------------------
+ * 18. FD Create — "Open New Fixed Deposit" (dashboard tile -> /dashboard/open-fd).
+ *     4-step wizard; steps 1-2 confirmed against the live app.
+ * ---------------------------------------------------------------- */
+const fixedDeposit = {
+  residentType: "Resident",          // input[name="residentType"] (Resident | Non-Resident)
+  product: "Sampath Fixed Deposit",  // select[name="scheme_code"]
+  tenure: "1 Month",                 // tenure card, e.g. "1 Month" | "4 Months" | "6 Months"
+  interestMode: "Maturity",          // select[name="interest_payable_mode"] (Monthly | Maturity)
+  nickname: "PW Test FD",            // input[name="nickname"]
+  // NOTE: the funding-account options have NO spaces ("101850104310 - LKR ...")
+  fundingAccount: "101850104310",    // select[name="dr_account_number"]
+  amount: "25000",                   // input[name="amount"]
+  sourceOfFunds: "SALARY",           // select[name="funding_sources"] (partial match)
+  // The interest-credit account options DO have spaces ("1018 5010 4310 - AVL. LKR ...")
+  interestAccount: "1018 5010 4310", // select[name="int_cr_account"]
+  autoRenew: false,
+};
+
+/* ----------------------------------------------------------------
+ * 19. Loan Settlement — My Accounts > Loans > "Settle Loan".
+ *     NOTE: the account currently has NO loans ("No data found"), so the settlement
+ *     form could not be observed. Values below are // VERIFY.
+ * ---------------------------------------------------------------- */
+const loanSettlement = {
+  loan: "",                          // VERIFY: the loan to settle (blank = first/only loan)
+  fromAccount: "1018 5010 4310",     // VERIFY: funding account on the settlement form
+  amount: "1000",                    // VERIFY: settlement amount
+};
+
+/* ----------------------------------------------------------------
  *  NEGATIVE / VALIDATION DATA
  *  Each block intentionally triggers a specific validation error so the
  *  spec can assert the app blocks the transaction (before or after OTP).
@@ -507,5 +537,7 @@ module.exports = {
   scheduledBillPayment,
   manageScheduleTransfer,
   manageScheduleBiller,
+  fixedDeposit,
+  loanSettlement,
   negative,
 };
