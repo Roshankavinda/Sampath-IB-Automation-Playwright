@@ -1,18 +1,22 @@
 const { test } = require("../../utils/fixtures");
 const { ForgotPasswordPage } = require("../../pages/ForgotPasswordPage");
-const { forgotPassword } = require("../../test-data/testData");
+const { forgotPassword, credentials } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
  * Feature: Forgot Password — POSITIVE.
- * Login page -> "Reset" -> choose "Using Security Questions" -> enter a valid
- * username -> the reset flow accepts it and moves past step 1.
+ * Login page -> "Reset" -> "Using Security Questions" -> username -> reset OTP ->
+ * answer the security questions -> new-password step.
  *
- * NOTE: the spec intentionally stops once the reset request is ACCEPTED and does
- * NOT set a new password, so it never changes the real account credentials.
+ * The reset OTP is a real code sent to your mobile, so it is entered MANUALLY by default
+ * (run headed - the test pauses at the OTP screen). Set IB_MANUAL_OTP=false to auto-fill
+ * the bypass code.
+ *
+ * SAFETY: this spec stops once the flow reaches the NEW-PASSWORD step. It intentionally
+ * does NOT set a new password, so it never changes the real account credentials.
  */
 test.describe("Forgot Password - Positive", () => {
-  test("TC_FPWD_H01 - Valid username is accepted by the reset flow", async ({ page, loginPage }) => {
+  test("TC_FPWD_H01 - Valid username + OTP is accepted by the reset flow", async ({ page, loginPage }) => {
     const fpwd = new ForgotPasswordPage(page);
 
     await test.step("Open the login page and click the 'Reset' (Forgot Password) link", async () => {
@@ -34,8 +38,21 @@ test.describe("Forgot Password - Positive", () => {
       await fpwd.requestReset({ username: forgotPassword.username });
     });
 
-    await test.step("Validate the reset request is accepted (moves past the username step)", async () => {
-      await fpwd.assertResetAccepted();
+    await test.step("The OTP screen appears (a code is sent to your mobile)", async () => {
+      await fpwd.assertOtpStep();
+    });
+
+    await test.step("Enter the reset OTP from your mobile (manual) and continue", async () => {
+      await fpwd.enterOtpManually(forgotPassword.otp || credentials.otp);
+    });
+
+    await test.step("Answer the security questions (Mother's name / Pet's name)", async () => {
+      await fpwd.assertSecurityQuestionsStep();
+      await fpwd.answerSecurityQuestions(forgotPassword.securityAnswers);
+    });
+
+    await test.step("Validate the flow reached the new-password step (does NOT set a new password)", async () => {
+      await fpwd.assertReachedNewPasswordStep();
     });
   });
 

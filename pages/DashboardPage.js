@@ -185,6 +185,37 @@ class DashboardPage {
     await this.openQuickAction("Stop Card");
   }
 
+  /**
+   * Self Services > Request Tax Certificates.
+   * The Self Services dropdown items are no-op links in this build, but the route works,
+   * so navigate to it directly (requires an active session).
+   */
+  async goToTaxCertificates() {
+    await this.page.goto("/SVRClientWebV4/dashboard/self-services/tax-certificates", {
+      waitUntil: "domcontentloaded",
+    });
+  }
+
+  /** Self Services > Balance Confirmation (note the plural route: balance-confirmations). */
+  async goToBalanceConfirmations() {
+    await this.page.goto("/SVRClientWebV4/dashboard/self-services/balance-confirmations", {
+      waitUntil: "domcontentloaded",
+    });
+  }
+
+  /** Secure messaging inbox (the mail icon in the nav) -> /dashboard/inbox. */
+  async goToInbox() {
+    await this.page.goto("/SVRClientWebV4/dashboard/inbox", { waitUntil: "domcontentloaded" });
+  }
+
+  /** Dashboard Quick Actions tile "Sampath Slipless" -> /dashboard/slipless-banking. */
+  async goToSlipless() {
+    await this.waitForNavReady();
+    const tile = this.page.getByRole("button", { name: /slipless/i }).first();
+    await expect(tile, "'Sampath Slipless' tile should be visible on the dashboard").toBeVisible({ timeout: 60_000 });
+    await tile.click();
+  }
+
   /** Top-nav "Manage Schedules" -> the Schedule Management page (/dashboard/manage-schedule). */
   async goToManageSchedules() {
     await this.waitForNavReady();

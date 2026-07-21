@@ -47,6 +47,13 @@ const forgotPassword = {
   nic: process.env.IB_NIC || "", // VERIFY: NIC / other identifier the reset form asks for
   // A username that must NOT be found by the reset flow.
   unknownUsername: "nouser_zzz999",
+  otp: process.env.IB_OTP || "111111", // reset OTP (manual by default; bypass for CI)
+  // Security-question answers ("Using Security Questions" reset method). Each entry is
+  // matched to its question by the `question` keyword (case-insensitive).
+  securityAnswers: [
+    { question: "mother", answer: "mother" }, // Mother's name
+    { question: "pet", answer: "pet" }, // Pet's name
+  ],
 };
 
 /* ----------------------------------------------------------------
@@ -122,8 +129,8 @@ const ownCardSettlement = {
   // Flow: My Accounts > Credit Cards > select card > Settle > "Make payments to this card".
   card: "1071",                     // part of the card number shown on the card (5471 65XX XXXX 1071)
   fromAccount: "1018 5010 4310",    // funding account (select[name="account"] option)
-  settlementType: "Minimum Payment", // "Last Statement O/S" | "Minimum Payment" | "Custom Amount"
-  amount: "500",                    // used only when settlementType is "Custom Amount"
+  settlementType: "Custom Amount",  // "Last Statement O/S" | "Minimum Payment" | "Custom Amount"
+  amount: "1000",                   // entered into input[name="customAmount"] for a Custom Amount
 };
 
 /* ----------------------------------------------------------------
@@ -325,17 +332,17 @@ const manageScheduleBiller = {
  *     4-step wizard; steps 1-2 confirmed against the live app.
  * ---------------------------------------------------------------- */
 const fixedDeposit = {
-  residentType: "Resident",          // input[name="residentType"] (Resident | Non-Resident)
-  product: "Sampath Fixed Deposit",  // select[name="scheme_code"]
-  tenure: "1 Month",                 // tenure card, e.g. "1 Month" | "4 Months" | "6 Months"
-  interestMode: "Maturity",          // select[name="interest_payable_mode"] (Monthly | Maturity)
-  nickname: "PW Test FD",            // input[name="nickname"]
+  residentType: "Resident",                    // input[name="residentType"] (Resident | Non-Resident)
+  product: "Fixed Deposits 100,200,300 Days",  // select[name="scheme_code"]
+  tenure: "300 Days",                          // tenure card (this product offers the 300 Days card)
+  interestMode: "Maturity",                    // select[name="interest_payable_mode"] (300 Days -> Maturity)
+  nickname: "PW Test FD",                      // input[name="nickname"]
   // NOTE: the funding-account options have NO spaces ("101850104310 - LKR ...")
-  fundingAccount: "101850104310",    // select[name="dr_account_number"]
-  amount: "25000",                   // input[name="amount"]
-  sourceOfFunds: "SALARY",           // select[name="funding_sources"] (partial match)
+  fundingAccount: "101850104310",              // select[name="dr_account_number"]
+  amount: "25000",                             // input[name="amount"]
+  sourceOfFunds: "SALARY",                     // select[name="funding_sources"] (partial match)
   // The interest-credit account options DO have spaces ("1018 5010 4310 - AVL. LKR ...")
-  interestAccount: "1018 5010 4310", // select[name="int_cr_account"]
+  interestAccount: "1018 5010 4310",           // select[name="int_cr_account"]
   autoRenew: false,
 };
 
@@ -348,6 +355,61 @@ const loanSettlement = {
   loan: "",                          // VERIFY: the loan to settle (blank = first/only loan)
   fromAccount: "1018 5010 4310",     // VERIFY: funding account on the settlement form
   amount: "1000",                    // VERIFY: settlement amount
+};
+
+/* ----------------------------------------------------------------
+ * 20. Web Card opening ("Apply Web Card") — uses a SEPARATE profile whose account is
+ *     eligible to open a web card (the default gsuser4 account is not).
+ *     Flow: login -> dashboard "Apply Web Card" tile (enables a few seconds after load)
+ *     -> modal step 1 resident type -> step 2 From Account + terms -> step 3 agree +
+ *     OTP -> Confirm.
+ * ---------------------------------------------------------------- */
+const webCard = {
+  username: process.env.IB_WEBCARD_USERNAME || "v11user8",
+  password: process.env.IB_WEBCARD_PASSWORD || "Hoax@666",
+  otp: process.env.IB_OTP || "111111",
+  residentType: "Resident",          // "Yes, I am a Sri Lankan Resident" (or "Non-Resident")
+};
+
+/* ----------------------------------------------------------------
+ * 21. Slipless Banking (dashboard "Sampath Slipless" tile) - Cash Deposit & Withdrawal.
+ *     Fill account + amount -> Next / Proceed -> SMS OTP -> Confirm -> slip generated.
+ * ---------------------------------------------------------------- */
+const slipless = {
+  deposit: {
+    accountType: "Own Account",      // "Own Account" (default) | "Other Accounts"
+    account: "1018 5010 4310",       // select[name="accountFrom"]
+    amount: "1000",                  // input[name="amount"]
+  },
+  withdrawal: {
+    account: "1018 5010 4310",       // select[name="accountNumber"]
+    amount: "1000",
+  },
+};
+
+/* ----------------------------------------------------------------
+ * 22. Self Services - Request Tax Certificates (WHT/AIT) & Balance Confirmation.
+ *     Both are request wizards (no OTP), reached by direct route.
+ * ---------------------------------------------------------------- */
+const taxCertificate = {
+  certificateType: "WHT/AIT Certificate", // the only type offered
+  account: "101850104310",                // account number WITHOUT spaces (as shown in the table)
+};
+
+const balanceConfirmation = {
+  confirmationType: "Tax",                // "Tax" (to Inland Revenue) | "Audit"
+};
+
+/* ----------------------------------------------------------------
+ * 23. Secure Messaging (inbox) - Compose/Send a message + Reply.
+ *     Send -> SMS OTP -> Confirm (real OTP, manual). Reply needs an existing message
+ *     (the inbox list currently shows "Error loading data").
+ * ---------------------------------------------------------------- */
+const message = {
+  subject: "Card Center Inquiry",        // select#subject
+  subCategory: "General Request",        // select[name="subjectSubCategory"]
+  body: "PW automated test message. Please ignore.",
+  reply: "PW automated reply. Please ignore.",
 };
 
 /* ----------------------------------------------------------------
@@ -515,6 +577,21 @@ const negative = {
       expectedError: /frequency|required|select/i,
     },
   },
+
+  // Slipless deposit/withdrawal with a zero amount must be blocked.
+  slipless: {
+    zeroDeposit: {
+      accountType: "Own Account",
+      account: "1018 5010 4310",
+      amount: "0",
+      expectedError: /minimum|greater than|amount|valid|required/i,
+    },
+    zeroWithdrawal: {
+      account: "1018 5010 4310",
+      amount: "0",
+      expectedError: /minimum|greater than|amount|valid|required/i,
+    },
+  },
 };
 
 module.exports = {
@@ -539,5 +616,10 @@ module.exports = {
   manageScheduleBiller,
   fixedDeposit,
   loanSettlement,
+  webCard,
+  slipless,
+  taxCertificate,
+  balanceConfirmation,
+  message,
   negative,
 };

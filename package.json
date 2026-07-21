@@ -23,6 +23,10 @@
     "test:biller": "playwright test tests/*/addBiller.spec.js --headed",
     "test:savedpayee": "playwright test tests/*/transferSavedPayee.spec.js --headed",
     "test:savedbiller": "playwright test tests/*/billPaymentSavedBiller.spec.js --headed",
+    "test:messages": "playwright test tests/*/messages.spec.js --headed",
+    "test:selfservice": "playwright test tests/*/selfServices.spec.js --headed",
+    "test:slipless": "playwright test tests/*/slipless.spec.js --headed",
+    "test:webcard": "playwright test tests/*/webCardOpening.spec.js --headed",
     "test:auto-otp": "IB_MANUAL_OTP=false playwright test",
     "report": "playwright show-report"
   },

@@ -73,25 +73,36 @@ class FixedDepositPage {
     await this.continueButton.click();
   }
 
-  /** ASSERTION: step 2 (FD details) is displayed with its async dropdowns loaded. */
+  /**
+   * ASSERTION: step 2 (FD details) has loaded. Only the fields present at load are checked
+   * here - the Funding Account (dr_account_number) and Interest Payable Mode only appear
+   * AFTER a tenure card is selected, so they are validated later (assertFormValidations).
+   */
   async assertDetailsStepLoaded() {
     await expect(this.nicknameInput, "FD step 2: the Nickname field should be shown").toBeVisible({ timeout: 60_000 });
-    await expect(
-      this.interestAccountSelect,
-      "FD step 2: the 'Interest To Be Credited To' dropdown should load (it is served asynchronously)"
-    ).toBeVisible({ timeout: 60_000 });
+    await expect(this.productSelect, "FD step 2: the Fixed Deposit Product dropdown should be shown").toBeVisible({
+      timeout: 60_000,
+    });
+    await expect
+      .poll(async () => this.tenureCards.count().catch(() => 0), {
+        timeout: 60_000,
+        message: "FD step 2: the tenure options should render",
+      })
+      .toBeGreaterThan(0);
   }
 
-  /** SOFT VALIDATIONS: step 2's dropdowns are populated and the inputs are present. */
+  /**
+   * SOFT VALIDATIONS on step 2. Call AFTER selectProductAndTenure(), since the Funding
+   * Account and Interest Payable Mode dropdowns are only revealed once a tenure is chosen.
+   */
   async assertFormValidations() {
     await assertDropdownPopulated(this.productSelect, "Fixed Deposit Product");
     await assertDropdownPopulated(this.fundingAccountSelect, "Funding Account");
     await assertDropdownPopulated(this.sourceOfFundsSelect, "Source of Funds");
+    await assertDropdownPopulated(this.interestModeSelect, "Interest Payable Mode");
     await assertDropdownPopulated(this.interestAccountSelect, "Interest To Be Credited To");
     await expect.soft(this.nicknameInput, "Nickname field should be visible").toBeVisible();
     await expect.soft(this.amountInput, "Amount field should be visible").toBeVisible();
-    const tenures = await this.tenureCards.count().catch(() => 0);
-    expect.soft(tenures, "Tenure options should be displayed").toBeGreaterThan(0);
   }
 
   /**
@@ -101,9 +112,11 @@ class FixedDepositPage {
    */
   async selectProductAndTenure(data) {
     if (data.product) await selectOptionByLabelContains(this.productSelect, data.product);
+    // The tenure cards re-render after the product changes.
+    await this.page.waitForTimeout(1500);
 
-    // Anchor the tenure to the START of the card text, otherwise "1 Month" also matches
-    // the "13 Months" card.
+    // Anchor the tenure to the START of the card text, otherwise "1 Month" would also
+    // match "13 Months" (harmless for "300 Days", kept for consistency).
     const card = this.tenureCards
       .filter({ hasText: new RegExp(`^\\s*${data.tenure.replace(/\s+/g, "\\s*")}`, "i") })
       .first();
@@ -112,32 +125,20 @@ class FixedDepositPage {
     });
     await card.click();
 
-    // Each card carries both rates ("8.00% Monthly" / "8.90% Maturity"); clicking the one
-    // for the wanted mode is what selects the payable mode.
-    if (data.interestMode) {
-      const rateCell = card.getByText(new RegExp(data.interestMode, "i")).first();
-      if (await rateCell.isVisible().catch(() => false)) await rateCell.click().catch(() => {});
-      await this.page.waitForTimeout(1500);
-    }
-
-    // Choosing a tenure reveals the Monthly/Maturity interest payable mode.
+    // Choosing the tenure card populates the interest payable mode dropdown (its valid
+    // options depend on the tenure - e.g. 300 Days offers "Maturity").
     await expect(
       this.interestModeSelect,
       "The interest payable mode should appear once a tenure is selected"
     ).toBeVisible({ timeout: 20_000 });
+    await expect
+      .poll(async () => this.interestModeSelect.locator("option").count().catch(() => 0), {
+        timeout: 30_000,
+        message: "The interest payable mode options should load after the tenure card is clicked",
+      })
+      .toBeGreaterThan(1);
 
-    // Its options are derived from the chosen tenure and arrive after the control itself
-    // (it starts with only a "Selected Payable Mode" placeholder). Best-effort: if the
-    // rates never populate, the tenure card click may already carry the mode.
-    const populated = await expect
-      .poll(async () => this.interestModeSelect.locator("option").count().catch(() => 0), { timeout: 20_000 })
-      .toBeGreaterThan(1)
-      .then(() => true)
-      .catch(() => false);
-
-    if (populated && data.interestMode) {
-      await selectOptionByLabelContains(this.interestModeSelect, data.interestMode).catch(() => {});
-    }
+    if (data.interestMode) await selectOptionByLabelContains(this.interestModeSelect, data.interestMode);
   }
 
   /** Fills the rest of step 2 (nickname, funding account, amount, source, interest account). */
@@ -148,7 +149,11 @@ class FixedDepositPage {
 
     await this.amountInput.fill(data.amount);
     await selectOptionByLabelContains(this.sourceOfFundsSelect, data.sourceOfFunds);
-    await selectOptionByLabelContains(this.interestAccountSelect, data.interestAccount);
+    // "Interest To Be Credited To" is present for these products, but fill it defensively
+    // (it may not apply to every interest mode).
+    if (data.interestAccount && (await this.interestAccountSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.interestAccountSelect, data.interestAccount).catch(() => {});
+    }
 
     if (data.autoRenew) await this.autoRenewCheckbox.check({ force: true }).catch(() => {});
 

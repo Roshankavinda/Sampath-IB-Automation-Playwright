@@ -22,13 +22,18 @@ test.describe("FD Create - Positive", () => {
       await fd.selectResidentType(fixedDeposit.residentType);
     });
 
-    await test.step("Step 2: validate the FD details form", async () => {
+    await test.step("Step 2: the FD details form is displayed", async () => {
       await fd.assertDetailsStepLoaded();
-      await fd.assertFormValidations();
     });
 
     await test.step(`Step 2: select the product and the "${fixedDeposit.tenure}" tenure`, async () => {
       await fd.selectProductAndTenure(fixedDeposit);
+    });
+
+    await test.step("Step 2: validate the FD details form (dropdowns populated)", async () => {
+      // Runs after the tenure is chosen: the Funding Account and Interest Payable Mode
+      // dropdowns only appear once a tenure card is selected.
+      await fd.assertFormValidations();
     });
 
     await test.step("Step 2: fill the FD details", async () => {

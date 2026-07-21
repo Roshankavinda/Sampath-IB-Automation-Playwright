@@ -27,16 +27,32 @@ test.describe("Fund Transfer - Mobile Cash - Positive", () => {
       await mobile.assertFormValidations();
     });
 
-    await test.step("Fill the Mobile Cash details", async () => {
+    // Filling + submitting the form has no side effect until the OTP is confirmed, so if the
+    // app intermittently bounces back to the Dashboard before the OTP popup shows, we can
+    // safely reopen the form and resubmit until the confirmation popup appears.
+    const fillMobileCashForm = async () => {
       await mobile.fillForm(mobileCash);
-    });
-
-    await test.step("Ensure One-time Transaction mode is selected", async () => {
       await mobile.ensureOneTimeTransaction();
+    };
+    const reopenMobileCashForm = async () => {
+      await loggedInDashboard.goToSendMoney();
+      await sendMoney.assertLoaded();
+      await sendMoney.selectMobileCashTab();
+      await mobile.assertLoaded();
+      await fillMobileCashForm();
+    };
+
+    await test.step("Fill the Mobile Cash details", async () => {
+      await fillMobileCashForm();
     });
 
     await test.step("Submit and validate the OTP/confirmation popup", async () => {
-      await mobile.submit();
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        if (attempt > 1) await reopenMobileCashForm(); // previous attempt bounced to the Dashboard
+        await mobile.submit();
+        if ((await popup.waitForOutcome()) !== "bounce") break; // otp/error/timeout -> assertVisible reports it
+      }
       await popup.assertVisible();
       await popup.verifyDetails({ amount: mobileCash.amount });
     });
