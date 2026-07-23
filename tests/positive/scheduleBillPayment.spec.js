@@ -2,10 +2,8 @@ const { test } = require("../../utils/fixtures");
 const { BillPaymentPage } = require("../../pages/BillPaymentPage");
 const { ScheduleModal } = require("../../pages/ScheduleModal");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials } = require("../../test-data/accounts");
-const scheduledBillPayment = require("../../test-data/scheduledBillPayment");
+const { credentials, scheduledBillPayment } = require("../../test-data/testData");
 const { attachToastOnFailure } = require("../../utils/helpers");
-
 /**
  * Feature: Schedule Payment - Bill Payment (Standing Order) — POSITIVE.
  * Login -> Bill Payment -> category -> biller -> pay-by-account -> reference / amount ->
