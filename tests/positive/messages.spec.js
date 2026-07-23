@@ -1,7 +1,8 @@
 const { test } = require("../../utils/fixtures");
 const { MessagesPage } = require("../../pages/MessagesPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, message } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const message = require("../../test-data/message");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

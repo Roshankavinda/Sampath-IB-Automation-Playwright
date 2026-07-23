@@ -4,6 +4,7 @@ const {
   getToastText,
   assertDropdownPopulated,
   assertSelectedContains,
+  waitForSuccessMessage,
 } = require("../utils/helpers");
 
 /**
@@ -140,17 +141,23 @@ class AddBillerPage {
     await expect(this.templateNameInput, "Template name should hold the entered value").toHaveValue(data.templateName);
   }
 
-  /** Clicks Next, keeping the save response so a rejection can be reported precisely. */
+  /**
+   * Clicks Next to submit the biller. The save is OTP-gated (Next opens the OTP/confirmation
+   * popup), so this does NOT block waiting for a save response. The response is captured in
+   * the background so a rejection can still be reported precisely by assertBillerSaved().
+   */
   async submit() {
     await expect(this.nextButton, "'Next' should be visible on the Add Biller form").toBeVisible({ timeout: 15_000 });
-    const savePromise = this.page
+    this.lastSaveResponse = "";
+    this.page
       .waitForResponse((r) => r.request().method() === "POST" && !/google-analytics/.test(r.url()), {
-        timeout: 30_000,
+        timeout: 60_000,
       })
-      .catch(() => null);
+      .then(async (r) => {
+        this.lastSaveResponse = await r.text().catch(() => "");
+      })
+      .catch(() => {});
     await this.nextButton.click();
-    const res = await savePromise;
-    this.lastSaveResponse = res ? await res.text().catch(() => "") : "";
   }
 
   /** ASSERTION: submitting an empty form is blocked with inline "is required" messages. */
@@ -164,33 +171,52 @@ class AddBillerPage {
   }
 
   /**
-   * ASSERTION: the biller was saved.
-   *
-   * The save is rejected by the backend in this environment ("Session TimeOut"), so
-   * report that plainly rather than as a vague timeout.
+   * ASSERTION: the biller was saved. Validates BOTH the success confirmation:
+   *   1. the "added successfully" toast shown after the OTP, and
+   *   2. the new biller appearing as the latest record in the Saved Billers list (matched by
+   *      its unique template name).
    */
   async assertBillerSaved(templateName) {
-    const saved = await this.page
-      .getByText(new RegExp(`success|saved|added|${templateName}`, "i"))
-      .first()
-      .waitFor({ state: "visible", timeout: 25_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (saved) return;
+    const successRe = /beneficiary added successfully|biller added successfully|added successfully|successful/i;
 
-    const toast = await getToastText(this.page, 3_000);
-    // Quote the server's own message ("Internal server error", "Session TimeOut", ...).
-    const serverMessage = (this.lastSaveResponse.match(/"message":"([^"]+)"/) || [])[1] || toast;
-    if (/session\s*time\s*out|internal server error|failed|timed out/i.test(serverMessage || "")) {
+    // 1) The success toast/message.
+    const messageShown = await waitForSuccessMessage(this.page, successRe, 25_000);
+    if (!messageShown) {
+      const toast = await getToastText(this.page, 3_000);
+      // Quote the server's own message ("Internal server error", "Session TimeOut", ...).
+      const serverMessage = (this.lastSaveResponse.match(/"message":"([^"]+)"/) || [])[1] || toast;
+      if (/session\s*time\s*out|internal server error|failed|timed out/i.test(serverMessage || "")) {
+        throw new Error(
+          `The biller was not saved: the server rejected the save with "${serverMessage}" (HTTP 500) and the form ` +
+            "stayed open. This is an environment/backend issue, not a locator problem."
+        );
+      }
+      const onScreen = await this.visibleSummary();
       throw new Error(
-        `The biller was not saved: the server rejected the save with "${serverMessage}" (HTTP 500) and the form ` +
-          "stayed open. This is an environment/backend issue, not a locator problem."
+        `No "added successfully" message was shown after confirming the OTP for biller "${templateName}". ` +
+          `Visible on screen: ${onScreen}.`
       );
     }
-    throw new Error(
-      `The biller "${templateName}" was not confirmed as saved.` +
-        (toast ? ` Application showed: "${toast.trim()}".` : "")
-    );
+
+    // 2) The new record appears in the Saved Billers list (unique template name => exactly one).
+    const record = this.page.getByText(templateName, { exact: true }).first();
+    await expect(
+      record,
+      `The newly added biller "${templateName}" should appear as a record in the Saved Billers list`
+    ).toBeVisible({ timeout: 30_000 });
+  }
+
+  /** Collects the visible headings (and any toast) for diagnostics. */
+  async visibleSummary() {
+    const parts = [];
+    const headings = await this.page.getByRole("heading").allInnerTexts().catch(() => []);
+    for (const h of headings) {
+      const t = h.trim();
+      if (t) parts.push(`"${t}"`);
+    }
+    const toast = await getToastText(this.page, 1_500);
+    if (toast) parts.push(`toast="${toast.trim()}"`);
+    return parts.slice(0, 8).join(" | ") || "(no headings/toast found)";
   }
 }
 

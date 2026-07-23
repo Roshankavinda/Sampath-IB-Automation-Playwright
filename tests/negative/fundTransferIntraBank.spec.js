@@ -1,7 +1,7 @@
 const { test, expect } = require("../../utils/fixtures");
 const { SendMoneyPage } = require("../../pages/SendMoneyPage");
 const { OtherBankTransferPage } = require("../../pages/OtherBankTransferPage");
-const { negative } = require("../../test-data/testData");
+const negative = require("../../test-data/negative");
 const { attachToastOnFailure, assertValidationError } = require("../../utils/helpers");
 
 /**

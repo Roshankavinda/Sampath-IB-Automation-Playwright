@@ -4,6 +4,7 @@ const {
   getToastText,
   assertDropdownPopulated,
   assertSelectedContains,
+  waitForSuccessMessage,
 } = require("../utils/helpers");
 
 /**
@@ -135,19 +136,27 @@ class AddPayeePage {
     );
   }
 
-  /** Clicks Next, keeping the save response so a rejection can be reported precisely. */
+  /**
+   * Clicks Next to submit the payee. The save is OTP-gated: clicking Next opens the OTP/
+   * confirmation popup, so this does NOT block waiting for a save response (that only lands
+   * after the OTP is confirmed). The save response is captured in the background so a
+   * rejection can still be reported precisely by assertPayeeSaved().
+   */
   async submit() {
     await expect(this.nextButton, "'Next' should be enabled once the payee form is valid").toBeEnabled({
       timeout: 20_000,
     });
-    const savePromise = this.page
+    // Best-effort background capture of the save response (available by the time we assert).
+    this.lastSaveResponse = "";
+    this.page
       .waitForResponse((r) => r.request().method() === "POST" && !/google-analytics/.test(r.url()), {
-        timeout: 30_000,
+        timeout: 60_000,
       })
-      .catch(() => null);
+      .then(async (r) => {
+        this.lastSaveResponse = await r.text().catch(() => "");
+      })
+      .catch(() => {});
     await this.nextButton.click();
-    const res = await savePromise;
-    this.lastSaveResponse = res ? await res.text().catch(() => "") : "";
   }
 
   /** ASSERTION: an empty form is blocked with inline "<field> is required" messages. */
@@ -161,33 +170,53 @@ class AddPayeePage {
   }
 
   /**
-   * ASSERTION: the payee was saved.
-   *
-   * The save is rejected by the backend in this environment ("Session TimeOut"), so
-   * report that plainly rather than as a vague timeout.
+   * ASSERTION: the payee was saved. Validates BOTH the success confirmation:
+   *   1. the "Beneficiary added successfully" toast shown after the OTP, and
+   *   2. the new payee appearing as the latest record in the Saved Payees table (matched by
+   *      its unique nickname).
    */
   async assertPayeeSaved(nickName) {
-    const saved = await this.page
-      .getByText(new RegExp(`success|saved|added|${nickName}`, "i"))
-      .first()
-      .waitFor({ state: "visible", timeout: 25_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (saved) return;
+    const successRe = /beneficiary added successfully|added successfully|payee added|successful/i;
 
-    const toast = await getToastText(this.page, 3_000);
-    const serverSaidTimeout = /session\s*time\s*out|session expired|timed out/i.test(
-      `${this.lastSaveResponse} ${toast}`
-    );
-    if (serverSaidTimeout) {
+    // 1) The success toast/message.
+    const messageShown = await waitForSuccessMessage(this.page, successRe, 25_000);
+    if (!messageShown) {
+      const toast = await getToastText(this.page, 3_000);
+      const serverSaidTimeout = /session\s*time\s*out|session expired|timed out/i.test(
+        `${this.lastSaveResponse} ${toast}`
+      );
+      if (serverSaidTimeout) {
+        throw new Error(
+          'The payee was not saved: the server rejected the save with "Session TimeOut". ' +
+            "This is the same environment/backend issue that blocks transactions, not a locator problem."
+        );
+      }
+      const onScreen = await this.visibleSummary();
       throw new Error(
-        'The payee was not saved: the server rejected the save with "Session TimeOut" and the form stayed open. ' +
-          "This is the same environment/backend issue that blocks transactions, not a locator problem."
+        `No "Beneficiary added successfully" message was shown after confirming the OTP for "${nickName}". ` +
+          `Visible on screen: ${onScreen}.`
       );
     }
-    throw new Error(
-      `The payee "${nickName}" was not confirmed as saved.` + (toast ? ` Application showed: "${toast.trim()}".` : "")
-    );
+
+    // 2) The new record appears in the Saved Payees table (unique nickname => exactly one).
+    const payeeCell = this.page.getByRole("cell", { name: nickName, exact: true }).first();
+    await expect(
+      payeeCell,
+      `The newly added payee "${nickName}" should appear as a record in the Saved Payees table`
+    ).toBeVisible({ timeout: 30_000 });
+  }
+
+  /** Collects the visible headings (and any toast) for diagnostics. */
+  async visibleSummary() {
+    const parts = [];
+    const headings = await this.page.getByRole("heading").allInnerTexts().catch(() => []);
+    for (const h of headings) {
+      const t = h.trim();
+      if (t) parts.push(`"${t}"`);
+    }
+    const toast = await getToastText(this.page, 1_500);
+    if (toast) parts.push(`toast="${toast.trim()}"`);
+    return parts.slice(0, 8).join(" | ") || "(no headings/toast found)";
   }
 }
 

@@ -2,7 +2,8 @@ const { test } = require("../../utils/fixtures");
 const { SendMoneyPage } = require("../../pages/SendMoneyPage");
 const { OtherBankTransferPage } = require("../../pages/OtherBankTransferPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, negative } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const negative = require("../../test-data/negative");
 const { attachToastOnFailure, submitAndExpectRejection } = require("../../utils/helpers");
 
 /**

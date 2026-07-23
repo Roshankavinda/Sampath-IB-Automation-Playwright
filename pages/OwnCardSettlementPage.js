@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains, toRegExp } = require("../utils/helpers");
 
 /**
  * Own Card Settlement — settle your OWN Sampath credit card.
@@ -141,6 +141,7 @@ class OwnCardSettlementPage {
    * message with it.
    */
   async assertAmountValidationShown(pattern = /must be greater than/i) {
+    pattern = toRegExp(pattern);
     const error = this.page.getByText(pattern).locator("visible=true").first();
     await expect(
       error,

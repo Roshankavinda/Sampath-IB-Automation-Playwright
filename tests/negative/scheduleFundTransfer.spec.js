@@ -2,7 +2,7 @@ const { test } = require("../../utils/fixtures");
 const { SendMoneyPage } = require("../../pages/SendMoneyPage");
 const { OwnAccountPage } = require("../../pages/OwnAccountPage");
 const { ScheduleModal } = require("../../pages/ScheduleModal");
-const { negative } = require("../../test-data/testData");
+const negative = require("../../test-data/negative");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

@@ -1,6 +1,6 @@
 const { test } = require("../../utils/fixtures");
 const { ManageSchedulePage } = require("../../pages/ManageSchedulePage");
-const { manageScheduleBiller } = require("../../test-data/testData");
+const manageScheduleBiller = require("../../test-data/manageScheduleBiller");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

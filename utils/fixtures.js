@@ -1,7 +1,7 @@
 const base = require("@playwright/test");
 const { LoginPage } = require("../pages/LoginPage");
 const { DashboardPage } = require("../pages/DashboardPage");
-const { credentials } = require("../test-data/testData");
+const { credentials } = require("../test-data/accounts");
 
 /**
  * Custom fixtures.

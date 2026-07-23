@@ -1,6 +1,6 @@
 const { test } = require("../../utils/fixtures");
 const { DashboardPage } = require("../../pages/DashboardPage");
-const { credentials } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

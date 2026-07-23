@@ -2,7 +2,7 @@ const { test } = require("../../utils/fixtures");
 const { LoginPage } = require("../../pages/LoginPage");
 const { DashboardPage } = require("../../pages/DashboardPage");
 const { WebCardPage } = require("../../pages/WebCardPage");
-const { webCard } = require("../../test-data/testData");
+const { webCard } = require("../../test-data/accounts");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

@@ -2,7 +2,8 @@ const { test } = require("../../utils/fixtures");
 const { SendMoneyPage } = require("../../pages/SendMoneyPage");
 const { OwnAccountPage } = require("../../pages/OwnAccountPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, ownTransfer } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const ownTransfer = require("../../test-data/ownTransfer");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

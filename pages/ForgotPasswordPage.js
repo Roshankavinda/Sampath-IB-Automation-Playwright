@@ -261,7 +261,7 @@ class ForgotPasswordPage {
         const qText = await this.visibleQuestionText();
         throw new Error(
           `Reached a security question with no configured answer: "${qText}". ` +
-            "Add it to forgotPassword.securityAnswers in test-data/testData.js."
+            "Add it to securityAnswers in test-data/forgotPassword.json."
         );
       }
 

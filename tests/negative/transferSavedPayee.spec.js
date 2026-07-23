@@ -1,7 +1,8 @@
 const { test, expect } = require("../../utils/fixtures");
 const { SavedPayeeTransferPage } = require("../../pages/SavedPayeeTransferPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, negative } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const negative = require("../../test-data/negative");
 const { attachToastOnFailure, submitAndExpectRejection } = require("../../utils/helpers");
 
 /**

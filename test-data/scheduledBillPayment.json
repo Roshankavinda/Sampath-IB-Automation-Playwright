@@ -1,0 +1,21 @@
+{
+  "single": {
+    "category": "Telephone",
+    "biller": "Dialog Mobile",
+    "fromAccount": "1018 5010 4310",
+    "referenceFieldName": "Your GSM Phone Number",
+    "referenceValue": "0771234567",
+    "amount": "500",
+    "frequency": "One Time"
+  },
+  "recurring": {
+    "category": "Telephone",
+    "biller": "Dialog Mobile",
+    "fromAccount": "1018 5010 4310",
+    "referenceFieldName": "Your GSM Phone Number",
+    "referenceValue": "0771234567",
+    "amount": "500",
+    "frequency": "Monthly",
+    "numberOfTransactions": "3"
+  }
+}

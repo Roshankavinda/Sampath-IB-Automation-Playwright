@@ -149,13 +149,26 @@ function offsetDate(baseISO, addDays) {
 }
 
 /**
+ * Normalises an error/validation pattern to a RegExp. The negative test data is stored in
+ * JSON, where patterns are plain strings (e.g. "invalid|not valid|not found"); this rebuilds
+ * them into a case-insensitive RegExp. A value that is already a RegExp is returned as-is.
+ * @param {RegExp|string} pattern
+ * @param {string} [flags]
+ * @returns {RegExp}
+ */
+function toRegExp(pattern, flags = "i") {
+  return pattern instanceof RegExp ? pattern : new RegExp(pattern, flags);
+}
+
+/**
  * ASSERTION for negative tests: a validation/error message matching `pattern`
  * is shown (toast or inline). Positive wait, so it stays stable.
  * @param {import('@playwright/test').Page} page
- * @param {RegExp} pattern
+ * @param {RegExp|string} pattern
  * @param {number} [timeoutMs]
  */
 async function assertValidationError(page, pattern, timeoutMs = 20_000) {
+  pattern = toRegExp(pattern);
   // Only consider VISIBLE matches. The app keeps hidden copies of a lot of text (the
   // collapsed nav dropdowns, off-screen panels), so a bare .first() can lock onto a
   // hidden node that will never become visible and time out even though the real message
@@ -234,6 +247,40 @@ async function attachToastOnFailure(page, testInfo) {
   }
 }
 
+/**
+ * A short, unique-per-run nickname / template name for "create" flows so each run adds a
+ * distinct record (e.g. "PW7f3a9k"). Kept within `maxLen` (the payee Nickname is maxlength 15).
+ * @param {string} [prefix]
+ * @param {number} [maxLen]
+ */
+function randomNickname(prefix = "PW", maxLen = 15) {
+  const rand = Math.random().toString(36).slice(2, 8); // 6 alphanumerics
+  return `${prefix}${rand}`.slice(0, maxLen);
+}
+
+/**
+ * Waits for a VISIBLE success message matching `successRe` - either on-screen text or a
+ * toast. Only visible matches count, so a hidden nav copy (e.g. "Saved Payees") never
+ * produces a false positive/negative. Returns true if found within `timeout`, else false.
+ * @param {import('@playwright/test').Page} page
+ * @param {RegExp} successRe
+ * @param {number} [timeout]
+ */
+async function waitForSuccessMessage(page, successRe, timeout = 25_000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const matches = page.getByText(successRe);
+    const count = await matches.count().catch(() => 0);
+    for (let i = 0; i < count; i++) {
+      if (await matches.nth(i).isVisible().catch(() => false)) return true;
+    }
+    const toast = await getToastText(page, 800);
+    if (successRe.test(toast)) return true;
+    await page.waitForTimeout(300);
+  }
+  return false;
+}
+
 module.exports = {
   fillOtpBoxes,
   selectOptionByLabelContains,
@@ -247,4 +294,7 @@ module.exports = {
   assertDropdownPopulated,
   assertSelectedContains,
   attachToastOnFailure,
+  randomNickname,
+  waitForSuccessMessage,
+  toRegExp,
 };

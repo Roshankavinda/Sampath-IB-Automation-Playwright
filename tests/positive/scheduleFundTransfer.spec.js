@@ -4,7 +4,8 @@ const { OwnAccountPage } = require("../../pages/OwnAccountPage");
 const { OtherBankTransferPage } = require("../../pages/OtherBankTransferPage");
 const { ScheduleModal } = require("../../pages/ScheduleModal");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, scheduledTransfer } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const scheduledTransfer = require("../../test-data/scheduledTransfer");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

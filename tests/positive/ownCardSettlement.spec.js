@@ -1,7 +1,8 @@
 const { test } = require("../../utils/fixtures");
 const { OwnCardSettlementPage } = require("../../pages/OwnCardSettlementPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, ownCardSettlement } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const ownCardSettlement = require("../../test-data/ownCardSettlement");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

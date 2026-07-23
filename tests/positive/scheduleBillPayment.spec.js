@@ -2,7 +2,8 @@ const { test } = require("../../utils/fixtures");
 const { BillPaymentPage } = require("../../pages/BillPaymentPage");
 const { ScheduleModal } = require("../../pages/ScheduleModal");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, scheduledBillPayment } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const scheduledBillPayment = require("../../test-data/scheduledBillPayment");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

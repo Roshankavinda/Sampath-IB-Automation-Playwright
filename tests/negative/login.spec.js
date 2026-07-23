@@ -1,5 +1,5 @@
 const { test, expect } = require("../../utils/fixtures");
-const { invalidCredentials } = require("../../test-data/testData");
+const { invalidCredentials } = require("../../test-data/accounts");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

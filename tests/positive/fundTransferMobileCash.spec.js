@@ -2,7 +2,8 @@ const { test } = require("../../utils/fixtures");
 const { SendMoneyPage } = require("../../pages/SendMoneyPage");
 const { MobileCashPage } = require("../../pages/MobileCashPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, mobileCash } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const mobileCash = require("../../test-data/mobileCash");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

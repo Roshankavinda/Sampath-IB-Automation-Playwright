@@ -1,0 +1,147 @@
+{
+  "ownTransfer": {
+    "insufficientFunds": {
+      "fromAccount": "1018 5010 4310",
+      "toAccount": "0018 5002 2719",
+      "amount": "999999999",
+      "senderRemark": "PW Neg InsufficientFunds",
+      "beneficiaryRemark": "PW Neg InsufficientFunds",
+      "expectedError": "insufficient funds"
+    },
+    "zeroAmount": {
+      "fromAccount": "1018 5010 4310",
+      "toAccount": "0018 5002 2719",
+      "amount": "0",
+      "senderRemark": "PW Neg ZeroAmount",
+      "beneficiaryRemark": "PW Neg ZeroAmount",
+      "expectedError": "minimum|greater than|amount|valid"
+    }
+  },
+  "intraBankTransfer": {
+    "invalidAccount": {
+      "fromAccount": "1018 5010 4310",
+      "bank": "Sampath",
+      "toAccountNumber": "1",
+      "amount": "100",
+      "purpose": "Wages & Salaries",
+      "beneficiaryRemark": "PW Neg IntraInvalid",
+      "expectedError": "invalid|not valid|account number|not found"
+    }
+  },
+  "otherBankTransfer": {
+    "invalidAccount": {
+      "fromAccount": "1018 5010 4310",
+      "bank": "TEST BANK B",
+      "toAccountNumber": "1",
+      "beneficiaryName": "Neg Test",
+      "amount": "100",
+      "purpose": "Wages & Salaries",
+      "beneficiaryRemark": "PW Neg InvalidAccount",
+      "expectedError": "invalid|not valid|account number|not found"
+    }
+  },
+  "mobileCash": {
+    "invalidMobile": {
+      "nic": "199012345678",
+      "mobileNumber": "123",
+      "receiverName": "PW Neg Receiver",
+      "purpose": "Family Remittances",
+      "amount": "1000",
+      "remark": "PW Neg MobileCash",
+      "expectedError": "invalid|mobile|number|digits"
+    }
+  },
+  "otherCreditCardTransfer": {
+    "invalidCard": {
+      "fromAccount": "1018 5010 4310",
+      "cardNumber": "1234",
+      "beneficiaryName": "Neg Card",
+      "amount": "100",
+      "beneficiaryRemark": "PW Neg CardInvalid",
+      "expectedError": "invalid|card|number|valid"
+    }
+  },
+  "ownCardSettlement": {
+    "zeroAmount": {
+      "fromAccount": "1018 5010 4310",
+      "card": "1071",
+      "settlementType": "Custom Amount",
+      "amount": "0",
+      "expectedError": "custom amount must be greater than"
+    }
+  },
+  "billPayment": {
+    "mismatchedReference": {
+      "category": "Telephone",
+      "biller": "Dialog Mobile",
+      "fromAccount": "1018 5010 4310",
+      "referenceFieldName": "Your GSM Phone Number",
+      "referenceValue": "0771234567",
+      "reEnterValue": "0770000000",
+      "amount": "500",
+      "expectedError": "match|same|re-?enter|do not"
+    }
+  },
+  "newPayee": {
+    "emptyForm": {
+      "expectedError": "is required"
+    }
+  },
+  "newBiller": {
+    "emptyForm": {
+      "expectedError": "is required"
+    }
+  },
+  "savedPayeeTransfer": {
+    "zeroAmount": {
+      "payee": "Roshan Test",
+      "fromAccount": "1018 5010 4310",
+      "amount": "0",
+      "purpose": "Wages & Salaries",
+      "beneficiaryRemark": "PW Neg SavedPayee",
+      "expectedError": "greater than|invalid|required"
+    }
+  },
+  "savedBillerPayment": {
+    "zeroAmount": {
+      "biller": "PW Dialog Bill",
+      "fromAccount": "1018 5010 4310",
+      "amount": "0",
+      "expectedError": "minimum|greater than|amount|valid|required"
+    }
+  },
+  "scheduledTransfer": {
+    "noFrequency": {
+      "fromAccount": "1018 5010 4310",
+      "toAccount": "1018 5525 0495",
+      "amount": "500",
+      "senderRemark": "PW Neg Sched",
+      "beneficiaryRemark": "PW Neg Sched",
+      "expectedError": "frequency|required|select"
+    }
+  },
+  "scheduledBillPayment": {
+    "noFrequency": {
+      "category": "Telephone",
+      "biller": "Dialog Mobile",
+      "fromAccount": "1018 5010 4310",
+      "referenceFieldName": "Your GSM Phone Number",
+      "referenceValue": "0771234567",
+      "amount": "500",
+      "expectedError": "frequency|required|select"
+    }
+  },
+  "slipless": {
+    "zeroDeposit": {
+      "accountType": "Own Account",
+      "account": "1018 5010 4310",
+      "amount": "0",
+      "expectedError": "minimum|greater than|amount|valid|required"
+    },
+    "zeroWithdrawal": {
+      "account": "1018 5010 4310",
+      "amount": "0",
+      "expectedError": "minimum|greater than|amount|valid|required"
+    }
+  }
+}

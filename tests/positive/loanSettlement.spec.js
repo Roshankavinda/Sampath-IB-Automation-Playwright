@@ -1,6 +1,6 @@
 const { test } = require("../../utils/fixtures");
 const { LoanSettlementPage } = require("../../pages/LoanSettlementPage");
-const { loanSettlement } = require("../../test-data/testData");
+const loanSettlement = require("../../test-data/loanSettlement");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

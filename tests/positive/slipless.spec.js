@@ -1,7 +1,8 @@
 const { test } = require("../../utils/fixtures");
 const { SliplessPage } = require("../../pages/SliplessPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, slipless } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const slipless = require("../../test-data/slipless");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

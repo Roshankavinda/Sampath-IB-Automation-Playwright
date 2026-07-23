@@ -28,13 +28,26 @@
     "test:slipless": "playwright test tests/*/slipless.spec.js --headed",
     "test:webcard": "playwright test tests/*/webCardOpening.spec.js --headed",
     "test:auto-otp": "IB_MANUAL_OTP=false playwright test",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "allure:serve": "allure serve allure-results",
+    "allure:report": "allure generate allure-results --clean -o allure-report",
+    "allure:open": "allure open allure-report",
+    "allure:clean": "rm -rf allure-results allure-report",
+    "test:allure": "npm run allure:clean && playwright test; npm run allure:serve"
   },
-  "keywords": ["playwright", "pom", "automation", "sampath", "banking"],
+  "keywords": [
+    "playwright",
+    "pom",
+    "automation",
+    "sampath",
+    "banking"
+  ],
   "author": "Roshan Wickramasooriya",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.49.0",
+    "allure-commandline": "^2.43.0",
+    "allure-playwright": "^3.10.2",
     "dotenv": "^16.4.5"
   }
 }

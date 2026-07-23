@@ -1,7 +1,8 @@
 const { test } = require("../../utils/fixtures");
 const { SavedBillerPaymentPage } = require("../../pages/SavedBillerPaymentPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { credentials, savedBillerPayment } = require("../../test-data/testData");
+const { credentials } = require("../../test-data/accounts");
+const savedBillerPayment = require("../../test-data/savedBillerPayment");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

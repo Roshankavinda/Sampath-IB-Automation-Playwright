@@ -1,6 +1,6 @@
 const { test } = require("../../utils/fixtures");
 const { FixedDepositPage } = require("../../pages/FixedDepositPage");
-const { fixedDeposit } = require("../../test-data/testData");
+const fixedDeposit = require("../../test-data/fixedDeposit");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

@@ -1,7 +1,8 @@
 const { test } = require("../../utils/fixtures");
 const { TaxCertificatePage } = require("../../pages/TaxCertificatePage");
 const { BalanceConfirmationPage } = require("../../pages/BalanceConfirmationPage");
-const { taxCertificate, balanceConfirmation } = require("../../test-data/testData");
+const taxCertificate = require("../../test-data/taxCertificate");
+const balanceConfirmation = require("../../test-data/balanceConfirmation");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

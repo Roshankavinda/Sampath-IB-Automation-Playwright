@@ -1,29 +1,30 @@
-const { test, expect } = require("../../utils/fixtures");
+const { test } = require("../../utils/fixtures");
 const { StopCardPage } = require("../../pages/StopCardPage");
-const { stopCard } = require("../../test-data/testData");
+const stopCard = require("../../test-data/stopCard");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
  * Feature: Stop Card — NEGATIVE / VALIDATION.
- * Without a card selected, Submit must stay disabled.
+ * Blocking a card is guarded by a confirmation modal: choosing "Back" must cancel the
+ * action so the card is NOT blocked and no OTP is requested. (There is no form/Submit to
+ * validate - each active card is stopped directly via its STOP button.)
  */
 test.describe("Stop Card - Negative & Validation", () => {
-  test("TC_STOPCARD_N01 - Submit is disabled when no card is selected", async ({ page, loggedInDashboard }) => {
+  test("TC_STOPCARD_N01 - Cancelling the block modal does not stop the card", async ({ page, loggedInDashboard }) => {
     const stop = new StopCardPage(page);
 
     await test.step("Navigate to Stop Card via Quick Actions", async () => {
-      await loggedInDashboard.goToStopCard();
+      await stop.openWithRetry(loggedInDashboard);
       await stop.assertLoaded();
     });
 
-    await test.step("Choose a card type but do NOT select a card", async () => {
+    await test.step("Choose the Credit card type and click STOP", async () => {
       await stop.selectCardType(stopCard.credit.cardType);
+      await stop.clickStop(stopCard.credit.card);
     });
 
-    await test.step("Submit must stay disabled until a card is chosen", async () => {
-      await expect(stop.submitButton, "Submit should be disabled until a card is selected").toBeDisabled({
-        timeout: 10_000,
-      });
+    await test.step("Cancel via 'Back' - the card must not be blocked and no OTP is shown", async () => {
+      await stop.cancelStop();
     });
   });
 

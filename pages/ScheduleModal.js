@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains, assertDropdownPopulated } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, toRegExp } = require("../utils/helpers");
 
 /**
  * Schedule (Standing Order) detail modal — shared by scheduled Fund Transfer and
@@ -89,6 +89,7 @@ class ScheduleModal {
    * @param {RegExp} expectedError
    */
   async assertFrequencyRequired(expectedError = /frequency|required|select/i) {
+    expectedError = toRegExp(expectedError);
     // Frequency should still be the placeholder ("Select Frequency").
     const freqVal = await this.frequencySelect.inputValue().catch(() => "");
     expect(freqVal, "Frequency should be left unselected for this negative case").toBe("");

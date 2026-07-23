@@ -1,7 +1,7 @@
 const { test, expect } = require("../../utils/fixtures");
 const { OwnCardSettlementPage } = require("../../pages/OwnCardSettlementPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
-const { negative } = require("../../test-data/testData");
+const negative = require("../../test-data/negative");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**

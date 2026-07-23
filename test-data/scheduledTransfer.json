@@ -1,0 +1,41 @@
+{
+  "own": {
+    "base": {
+      "fromAccount": "1018 5010 4310",
+      "toAccount": "1018 5525 0495",
+      "amount": "500",
+      "senderRemark": "PW Sched Own",
+      "beneficiaryRemark": "PW Sched Own"
+    }
+  },
+  "intra": {
+    "base": {
+      "fromAccount": "1018 5010 4310",
+      "bank": "Sampath",
+      "toAccountNumber": "101358394971",
+      "amount": "500",
+      "purpose": "Wages & Salaries",
+      "senderRemark": "PW Sched Intra",
+      "beneficiaryRemark": "PW Sched Intra"
+    }
+  },
+  "other": {
+    "base": {
+      "fromAccount": "1018 5010 4310",
+      "bank": "TEST BANK B",
+      "toAccountNumber": "9901234561",
+      "beneficiaryName": "Test User",
+      "amount": "500",
+      "purpose": "Wages & Salaries",
+      "beneficiaryRemark": "PW Sched Other"
+    }
+  },
+  "single": {
+    "frequency": "One Time"
+  },
+  "recurring": {
+    "frequency": "Monthly",
+    "scheduleType": "Number of Transfers",
+    "numberOfTransactions": "3"
+  }
+}

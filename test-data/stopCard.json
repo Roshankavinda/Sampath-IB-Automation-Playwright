@@ -1,0 +1,14 @@
+{
+  "credit": {
+    "cardType": "Credit",
+    "card": "1071"
+  },
+  "debit": {
+    "cardType": "Debit",
+    "card": ""
+  },
+  "web": {
+    "cardType": "Web",
+    "card": ""
+  }
+}
