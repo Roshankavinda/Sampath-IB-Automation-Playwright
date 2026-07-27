@@ -44,7 +44,7 @@ async function openFillAndSubmit(flow, page, loggedInDashboard, data) {
   await other.selectFromAccount(data.fromAccount);
   await other.selectBank(data.bank);
   if (flow === "intra") {
-    await other.enterIntraBankAccount(data.toAccountNumber); // name auto-fetched for Sampath
+    await other.enterIntraBankAccount(data.toAccountNumber, data.beneficiaryName); // auto-fetch, else type name
   } else {
     await other.enterToAccountAndBeneficiary(data.toAccountNumber, data.beneficiaryName);
   }

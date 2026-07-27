@@ -9,8 +9,17 @@ require("dotenv").config();
  * Every subsequent page is reached by CLICKING in the UI, and each page
  * is validated by asserting a heading / key element (not by URL).
  */
+
+// Regression mode (SUITE=regression) runs ONLY the aggregator files
+// (tests/*/regression.spec.js), which require every feature spec. A normal run does the
+// opposite: it runs the individual feature specs and skips the aggregators, so the suite is
+// never counted twice.
+const isRegression = process.env.SUITE === "regression";
+
 module.exports = defineConfig({
   testDir: "./tests",
+  testMatch: isRegression ? "**/regression.spec.js" : "**/*.spec.js",
+  testIgnore: isRegression ? undefined : "**/regression.spec.js",
   timeout: 120_000,
   expect: { timeout: 15_000 },
 

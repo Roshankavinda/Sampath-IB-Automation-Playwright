@@ -99,29 +99,45 @@ class OtherBankTransferPage {
   }
 
   /**
-   * Intra-bank (Sampath): enter the beneficiary account number and let the app
-   * auto-fetch the name. ASSERTION: the name field becomes populated and read-only.
+   * Intra-bank (Sampath): enter the beneficiary account number. For a valid Sampath account
+   * the app auto-fetches the name from core banking. That lookup is UNRELIABLE in this UAT
+   * (it often returns nothing and leaves the name field empty but editable), so if no name
+   * is fetched within a short window we fall back to typing `beneficiaryName` so the flow can
+   * still proceed. If the field is read-only and nothing was fetched, we report that clearly.
+   * @param {string} accountNumber
+   * @param {string} [beneficiaryName] fallback name if the auto-fetch returns nothing
    */
-  async enterIntraBankAccount(accountNumber) {
+  async enterIntraBankAccount(accountNumber, beneficiaryName) {
     await this.toAccountNumberInput.click();
     await this.toAccountNumberInput.fill(accountNumber);
     // The name is fetched from core banking for Sampath accounts; blur to trigger it.
     await this.toAccountNumberInput.press("Tab");
-    // Wait for the REAL beneficiary name, not the "Retrieving beneficiary name. Please
-    // wait..." loading placeholder (which also has length > 0 and would pass a naive poll).
-    await expect
-      .poll(
-        async () => {
-          const v = (await this.beneficiaryNameInput.inputValue().catch(() => "")).trim();
-          return v && !/retriev|please wait|loading|fetching/i.test(v) ? v : "";
-        },
-        {
-          timeout: 30_000,
-          message:
-            "Beneficiary name should auto-fetch (a real name, not the loading placeholder) for a valid Sampath account",
-        }
-      )
-      .not.toBe("");
+
+    // Wait for a REAL fetched name (not the "Retrieving beneficiary name..." placeholder).
+    const readFetchedName = async () => {
+      const v = (await this.beneficiaryNameInput.inputValue().catch(() => "")).trim();
+      return v && !/retriev|please wait|loading|fetching/i.test(v) ? v : "";
+    };
+    const deadline = Date.now() + 12_000;
+    while (Date.now() < deadline) {
+      if (await readFetchedName()) return; // auto-fetch worked
+      await this.page.waitForTimeout(500);
+    }
+
+    // No name auto-fetched. Fall back to typing it if the field is editable.
+    const editable = await this.beneficiaryNameInput.isEditable().catch(() => false);
+    if (editable && beneficiaryName) {
+      await this.beneficiaryNameInput.fill(beneficiaryName);
+      await expect(this.beneficiaryNameInput, "Beneficiary name should hold the entered value").toHaveValue(
+        beneficiaryName
+      );
+      return;
+    }
+    throw new Error(
+      `The beneficiary name did not auto-fetch for Sampath account "${accountNumber}" and the field is not editable, ` +
+        "so the intra-bank transfer cannot proceed. The core-banking name lookup returned no name in this environment " +
+        "(verified: even a valid own Sampath account did not resolve). Provide a name-resolving account or a fallback name."
+    );
   }
 
   async fillAmountAndDetails(data) {

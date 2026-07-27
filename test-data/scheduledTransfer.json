@@ -13,6 +13,7 @@
       "fromAccount": "1018 5010 4310",
       "bank": "Sampath",
       "toAccountNumber": "101358394971",
+      "beneficiaryName": "PW Sched Intra Payee",
       "amount": "500",
       "purpose": "Wages & Salaries",
       "senderRemark": "PW Sched Intra",
