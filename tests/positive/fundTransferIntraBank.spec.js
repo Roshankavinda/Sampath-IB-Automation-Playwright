@@ -34,7 +34,7 @@ test.describe("Fund Transfer - Intra Bank (Sampath) - Positive", () => {
     });
 
     await test.step("Enter the Sampath account number and let the name auto-fetch", async () => {
-      await intra.enterIntraBankAccount(intraBankTransfer.toAccountNumber);
+      await intra.enterIntraBankAccount(intraBankTransfer.toAccountNumber, intraBankTransfer.beneficiaryName);
     });
 
     await test.step("Fill amount and remark", async () => {
