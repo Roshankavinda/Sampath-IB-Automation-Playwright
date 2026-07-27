@@ -4,15 +4,56 @@ Automated end-to-end tests for **Sampath Vishwa Retail Web (Internet Banking)** 
 
 Navigation is done by **clicking through the UI** (only the login page is opened by URL). Every page is validated with **assertions on headings / key elements** — no URL assertions.
 
-## Automated flows
+## Phase 1 scope
 
-| Test ID | Flow |
-|---------|------|
-| TC_LOGIN_01 | Valid login → dashboard |
-| TC_LOGIN_02 | Invalid login → failure message |
-| **TC_OWN_01** | **Login → Own Fund Transfer** (One-time) |
-| **TC_OTHER_01** | **Login → Other Bank Transfer** (One-time) |
-| **TC_BILL_01** | **Login → Bill Payment** (One-time) |
+Positive paths and negative/validation cases are split into **two folders**
+(`tests/positive/` and `tests/negative/`), one `<feature>.spec.js` per feature in each,
+and every page object asserts key UI elements.
+
+| Feature | Positive spec | Negative spec |
+|---------|-----------|---------------|
+| Login (Username & Password) | `positive/login.spec.js` | `negative/login.spec.js` |
+| Forgot Password | `positive/forgotPassword.spec.js` | `negative/forgotPassword.spec.js` |
+| Dashboard (all validations) | `positive/dashboard.spec.js` | `negative/dashboard.spec.js` |
+| Fund Transfer - Own Account | `positive/fundTransferOwnAccount.spec.js` | `negative/fundTransferOwnAccount.spec.js` |
+| Fund Transfer - Intra Bank (Sampath) | `positive/fundTransferIntraBank.spec.js` | `negative/fundTransferIntraBank.spec.js` |
+| Fund Transfer - Other Bank | `positive/fundTransferOtherBank.spec.js` | `negative/fundTransferOtherBank.spec.js` |
+| Fund Transfer - Mobile Cash | `positive/fundTransferMobileCash.spec.js` | `negative/fundTransferMobileCash.spec.js` |
+| Fund Transfer - Other Bank Credit Card | `positive/fundTransferOtherCreditCard.spec.js` | `negative/fundTransferOtherCreditCard.spec.js` |
+| Own Card Settlement | `positive/ownCardSettlement.spec.js` | `negative/ownCardSettlement.spec.js` |
+| Stop Card (Credit/Debit/Web) | `positive/stopCard.spec.js` | `negative/stopCard.spec.js` |
+| Bill Payment (Dialog & Mobitel) | `positive/billPayment.spec.js` | `negative/billPayment.spec.js` |
+| Add New Payee (Payees & Billers) | `positive/addPayee.spec.js` | `negative/addPayee.spec.js` |
+| Add New Biller (Payees & Billers) | `positive/addBiller.spec.js` | `negative/addBiller.spec.js` |
+
+> ⚠️ **Some selectors are still inferred rather than confirmed against the live DOM.**
+> Every place that needs confirming against the real UAT app is marked with a `// VERIFY`
+> comment in the page object, or an inline note in `test-data/testData.js`. Run each flow
+> once in `--headed --slowmo` and adjust the flagged `name`/label values as needed.
+
+### OTP handling
+
+- **Login OTP** — always auto-filled with the UAT bypass code. Nothing to do.
+- **Transaction OTP** (fund transfers, bill payments, card settlement, saved payee/biller
+  transfers) — **entered manually by default.** A real OTP is sent to your phone; the test
+  pauses at the OTP popup until you type it in the browser and click Confirm, then
+  continues. Because it pauses, run these headed (all the per-feature `npm run test:*`
+  scripts already pass `--headed`):
+
+  ```bash
+  npm run test:own          # pauses for you to enter the transaction OTP
+  npm run test:savedpayee
+  ```
+
+  `IB_MANUAL_OTP_TIMEOUT` (default `180000` ms) sets how long it waits for you.
+
+- **Unattended / CI run** — set `IB_MANUAL_OTP=false` to auto-fill the bypass code for
+  transaction OTP too (no pausing):
+
+  ```bash
+  npm run test:auto-otp
+  IB_MANUAL_OTP=false npx playwright test tests/negative --headed
+  ```
 
 ## Project structure
 
@@ -22,22 +63,26 @@ sampath-ib-automation/
 ├── .env.example                # Copy to .env — URL / credentials / OTP
 ├── package.json                # Scripts
 ├── test-data/
-│   └── testData.js             # ★ EDIT HERE: accounts, banks, billers, amounts
+│   └── testData.js             # ★ EDIT HERE: accounts, banks, cards, billers, amounts + negative data
 ├── pages/                      # Page Objects (one per screen)
-│   ├── LoginPage.js
-│   ├── DashboardPage.js        # Quick Actions navigation (click-based)
-│   ├── SendMoneyPage.js        # shared Send Money tabs + heading assertion
-│   ├── OwnAccountPage.js
-│   ├── OtherBankTransferPage.js
-│   ├── BillPaymentPage.js
-│   └── ConfirmationPopup.js    # transaction OTP + success
-├── tests/                      # Specs (one flow per file)
-│   ├── login.spec.js
-│   ├── ownFundTransfer.spec.js
-│   ├── otherBankTransfer.spec.js
-│   └── billPayment.spec.js
+│   ├── LoginPage.js             # + Forgot Password link
+│   ├── ForgotPasswordPage.js    # reset flow (username → OTP → new password)
+│   ├── DashboardPage.js         # top-nav + Quick Actions + assertAllValidations()
+│   ├── SendMoneyPage.js         # shared Send Money tabs (Own / Other / Cards / Mobile Cash / Own Cards)
+│   ├── OwnAccountPage.js        # Own Account transfer
+│   ├── OtherBankTransferPage.js # Other Accounts — Intra Bank (auto-fetch) & Other Bank (typed)
+│   ├── OtherCreditCardsPage.js  # Other Bank Credit Card
+│   ├── MobileCashPage.js        # Mobile Cash
+│   ├── OwnCardSettlementPage.js # Own Card Settlement
+│   ├── StopCardPage.js          # Stop Card (Credit / Debit / Web)
+│   ├── BillPaymentPage.js       # Bill Payment (Dialog & Mobitel)
+│   └── ConfirmationPopup.js     # transaction OTP + success (shared)
+├── tests/                      # Specs — one <feature>.spec.js per feature in each folder
+│   ├── positive/                  # positive-path spec per feature
+│   └── negative/               # negative / validation spec per feature
 └── utils/
-    ├── helpers.js              # OTP filler, dropdown-by-label, toast capture
+    ├── helpers.js              # OTP filler, dropdown-by-label, validation-error assert,
+    │                           # toast capture, submitAndExpectRejection, attachToastOnFailure
     └── fixtures.js             # "loggedInDashboard" fixture (shared login)
 ```
 
@@ -86,17 +131,30 @@ Run everything (GUI/headed by default):
 npm test
 ```
 
-Run one flow (each opens the browser so you can watch):
+Run only the positive paths, or only the negative/validation cases:
 ```bash
-npm run test:login        # login only
-npm run test:own          # Login → Own Fund Transfer
-npm run test:otherbank    # Login → Other Bank Transfer
-npm run test:billpay      # Login → Bill Payment
+npm run test:positive        # every *.positive.spec.js
+npm run test:negative     # every *.negative.spec.js
+```
+
+Run one feature (both its positive + negative specs open the browser so you can watch):
+```bash
+npm run test:login          # Login
+npm run test:forgot         # Forgot Password
+npm run test:dashboard      # Dashboard (all validations)
+npm run test:own            # Fund Transfer - Own Account
+npm run test:intra          # Fund Transfer - Intra Bank (Sampath)
+npm run test:otherbank      # Fund Transfer - Other Bank
+npm run test:mobilecash     # Fund Transfer - Mobile Cash
+npm run test:cards          # Fund Transfer - Other Bank Credit Card
+npm run test:cardsettlement # Own Card Settlement
+npm run test:stopcard       # Stop Card (Credit / Debit / Web)
+npm run test:billpay        # Bill Payment (Dialog & Mobitel)
 ```
 
 Run a single test by title:
 ```bash
-npx playwright test -g "TC_OWN_01" --headed
+npx playwright test -g "TC_FT_OWN_H01" --headed
 ```
 
 Interactive UI mode (best for debugging — pick and re-run individual tests, scrub the timeline):
@@ -106,7 +164,7 @@ npm run test:ui
 
 Slow the actions down so you can follow them:
 ```bash
-npx playwright test -g "TC_OWN_01" --headed --slowmo=500
+npx playwright test -g "TC_FT_OWN_H01" --headed --slowmo=500
 ```
 
 Run headless (e.g. for CI):

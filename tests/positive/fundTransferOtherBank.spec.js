@@ -1,17 +1,18 @@
-const { test } = require("../utils/fixtures");
-const { SendMoneyPage } = require("../pages/SendMoneyPage");
-const { OtherBankTransferPage } = require("../pages/OtherBankTransferPage");
-const { ConfirmationPopup } = require("../pages/ConfirmationPopup");
-const { credentials, otherBankTransfer } = require("../test-data/testData");
-const { getToastText } = require("../utils/helpers");
+const { test } = require("../../utils/fixtures");
+const { SendMoneyPage } = require("../../pages/SendMoneyPage");
+const { OtherBankTransferPage } = require("../../pages/OtherBankTransferPage");
+const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
+const { credentials } = require("../../test-data/accounts");
+const otherBankTransfer = require("../../test-data/otherBankTransfer");
+const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Flow: Login -> Send Money -> Other Accounts ->
- *       From Account -> Bank -> To Account Number -> Beneficiary Name ->
- *       Amount -> Purpose -> Beneficiary Remark -> One-time -> Submit -> OTP.
+ * Feature: Fund Transfer - Other Bank — POSITIVE.
+ * Login -> Send Money -> Other Accounts -> From -> Bank -> account + name ->
+ * amount -> purpose -> One-time -> Submit -> OTP -> success.
  */
-test.describe("Other Bank Fund Transfer", () => {
-  test("TC_OTHER_01 - Login and transfer to another bank (One-time)", async ({ page, loggedInDashboard }) => {
+test.describe("Fund Transfer - Other Bank - Positive", () => {
+  test("TC_FT_OTHER_H01 - Transfer to another bank (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const otherBank = new OtherBankTransferPage(page);
     const popup = new ConfirmationPopup(page);
@@ -24,6 +25,7 @@ test.describe("Other Bank Fund Transfer", () => {
     await test.step("Open the 'Other Accounts' tab and validate the form", async () => {
       await sendMoney.selectOtherAccountsTab();
       await otherBank.assertLoaded();
+      await otherBank.assertFormValidations();
     });
 
     await test.step("Select From Account and the destination bank", async () => {
@@ -64,10 +66,5 @@ test.describe("Other Bank Fund Transfer", () => {
     });
   });
 
-  test.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== testInfo.expectedStatus) {
-      const toast = await getToastText(page, 1_500);
-      if (toast) await testInfo.attach("last-toast-message", { body: toast, contentType: "text/plain" });
-    }
-  });
+  test.afterEach(async ({ page }, testInfo) => attachToastOnFailure(page, testInfo));
 });

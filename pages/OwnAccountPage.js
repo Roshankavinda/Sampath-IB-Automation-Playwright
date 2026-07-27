@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
  * Send Money > Own Account form (OwnAccount.tsx).
@@ -17,21 +17,59 @@ class OwnAccountPage {
     this.senderRemarkInput = page.locator('input[name="senderRemark"]');
     this.beneficiaryRemarkInput = page.locator('input[name="beneficiaryRemark"]');
     this.transferModeRadios = page.locator('input[name="transferMode"]');
+    // Transfer Mode: One-time Transaction (ONLINE) vs Standing Order/Schedule (SCHEDULE).
+    this.transferModeOnline = page.locator('input[name="transferMode"][value="ONLINE"]');
+    this.transferModeSchedule = page.locator('input[name="transferMode"][value="SCHEDULE"]');
+    this.standingOrderLabel = page.getByText("Standing Order/Schedule", { exact: true }).first();
     this.submitButton = page.getByRole("button", { name: "Submit", exact: true });
+    // Submit is NOT disabled on an empty form: the app validates on click and shows
+    // inline "<field> is required" messages (To Account / Amount / Sender Remark /
+    // Beneficiary Remark are all mandatory).
+    this.requiredError = page.getByText(/is required/i).first();
   }
 
-  /** ASSERTION: the Own Account form is displayed. */
+  /**
+   * ASSERTION: the Own Account form is displayed.
+   *
+   * Both account dropdowns are fetched asynchronously and render as skeleton loaders
+   * first - To Account arrives after From Account - so each needs its own generous wait
+   * rather than the default expect timeout.
+   */
   async assertLoaded() {
     await expect(this.fromAccountSelect, "Own Account form: From Account dropdown should be visible").toBeVisible({
-      timeout: 90000,
+      timeout: 90_000,
     });
-    await expect(this.toAccountSelect, "Own Account form: To Account dropdown should be visible").toBeVisible();
-    await expect(this.amountInput, "Own Account form: Amount field should be visible").toBeVisible();
+    await expect(
+      this.toAccountSelect,
+      "Own Account form: To Account dropdown should load (it is fetched after the From Account list)"
+    ).toBeVisible({ timeout: 90_000 });
+    await expect(this.amountInput, "Own Account form: Amount field should be visible").toBeVisible({
+      timeout: 30_000,
+    });
+  }
+
+  /**
+   * SOFT VALIDATIONS on the loaded form: both account dropdowns are populated with
+   * selectable options and every input/control is present. Soft, so the report lists
+   * all UI problems at once instead of stopping at the first.
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.fromAccountSelect, "From Account");
+    await assertDropdownPopulated(this.toAccountSelect, "To Account");
+    await expect.soft(this.amountInput, "Amount field should be visible").toBeVisible();
+    await expect.soft(this.senderRemarkInput, "Sender Remark field should be visible").toBeVisible();
+    await expect.soft(this.beneficiaryRemarkInput, "Beneficiary Remark field should be visible").toBeVisible();
+    await expect.soft(this.transferModeRadios.first(), "A Transfer Mode option should be visible").toBeVisible();
+    await expect.soft(this.submitButton, "Submit button should be visible").toBeVisible();
   }
 
   async fillForm(data) {
     await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount);
     await selectOptionByLabelContains(this.toAccountSelect, data.toAccount);
+
+    // SOFT ASSERTION: the chosen source/destination accounts are the ones now selected.
+    await assertSelectedContains(this.fromAccountSelect, data.fromAccount, "From Account");
+    await assertSelectedContains(this.toAccountSelect, data.toAccount, "To Account");
 
     // ASSERTION: From and To accounts must be different.
     const fromVal = await this.fromAccountSelect.inputValue();
@@ -42,10 +80,16 @@ class OwnAccountPage {
     await this.senderRemarkInput.fill(data.senderRemark);
     await this.beneficiaryRemarkInput.fill(data.beneficiaryRemark);
 
-    // ASSERTION: entered values are reflected in the form.
-    await expect(this.amountInput, "Amount field should contain the entered amount").toHaveValue(
-      new RegExp(data.amount)
-    );
+    // ASSERTION: the entered amount is reflected in the form. The field reformats what
+    // was typed ("999999999" -> "LKR 999,999,999.00"), so compare the digits, not the
+    // raw string.
+    const digits = (s) => String(s).replace(/\D/g, "");
+    await expect
+      .poll(async () => digits(await this.amountInput.inputValue()), {
+        timeout: 15_000,
+        message: "Amount field should contain the entered amount",
+      })
+      .toContain(digits(data.amount));
   }
 
   async ensureOneTimeTransaction() {
@@ -56,11 +100,39 @@ class OwnAccountPage {
     await expect(oneTime, "One-time Transaction mode should be selected").toBeChecked();
   }
 
+  /**
+   * Selects the "Standing Order/Schedule" transfer mode. The schedule detail fields
+   * (start date, frequency, ...) are NOT on this form - they appear in a modal after
+   * Submit (see ScheduleModal). The radios are custom-styled, so click the label:
+   * a forced check() flips the input without firing React's onChange.
+   */
+  async selectStandingOrderSchedule() {
+    await this.standingOrderLabel.click();
+    await expect(this.transferModeSchedule, "Standing Order/Schedule mode should be selected").toBeChecked({
+      timeout: 10_000,
+    });
+  }
+
   async submit() {
     await expect(this.submitButton, "Submit button should be enabled once the form is valid").toBeEnabled({
       timeout: 15_000,
     });
     await this.submitButton.click();
+  }
+
+  /** ASSERTION: an empty form is blocked with inline "<field> is required" messages. */
+  async assertRequiredValidationShown() {
+    await expect(
+      this.requiredError,
+      "An inline 'is required' validation message should be shown when the form is empty"
+    ).toBeVisible({ timeout: 20_000 });
+
+    // ASSERTION: the mandatory fields are each called out, and the form does not advance.
+    await expect
+      .soft(this.page.getByText(/to account is required/i), "'To Account is required' should be shown")
+      .toBeVisible();
+    await expect.soft(this.page.getByText(/amount is required/i), "'Amount is required' should be shown").toBeVisible();
+    await expect(this.toAccountSelect, "The transfer form should stay open").toBeVisible();
   }
 }
 

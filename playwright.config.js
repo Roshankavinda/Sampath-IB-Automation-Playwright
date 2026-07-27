@@ -22,6 +22,9 @@ module.exports = defineConfig({
     ["list"],
     ["html", { outputFolder: "playwright-report", open: "never" }],
     ["json", { outputFile: "test-results/results.json" }],
+    // Allure results are written to ./allure-results. Turn them into a report with
+    // `npm run allure:serve` (temporary) or `npm run allure:report` (static ./allure-report).
+    ["allure-playwright", { resultsDir: "allure-results" }],
   ],
 
   use: {

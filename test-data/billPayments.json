@@ -1,0 +1,18 @@
+{
+  "dialog": {
+    "category": "Telephone",
+    "biller": "Dialog Mobile",
+    "fromAccount": "1018 5010 4310",
+    "referenceFieldName": "Your GSM Phone Number",
+    "referenceValue": "0771234567",
+    "amount": "500"
+  },
+  "mobitel": {
+    "category": "Telephone",
+    "biller": "Mobitel Pvt Ltd",
+    "fromAccount": "1018 5010 4310",
+    "referenceFieldName": "Your GSM Phone Number",
+    "referenceValue": "0712345678",
+    "amount": "500"
+  }
+}

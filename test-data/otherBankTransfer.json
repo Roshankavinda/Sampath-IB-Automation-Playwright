@@ -1,0 +1,9 @@
+{
+  "fromAccount": "1018 5010 4310",
+  "bank": "TEST BANK B",
+  "toAccountNumber": "9901234561",
+  "beneficiaryName": "Test User",
+  "amount": "100",
+  "purpose": "Wages & Salaries",
+  "beneficiaryRemark": "PW Other Bank"
+}

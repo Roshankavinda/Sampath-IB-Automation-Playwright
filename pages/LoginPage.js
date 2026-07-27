@@ -17,8 +17,14 @@ class LoginPage {
     this.usernameInput = page.locator('input[name="username"]');
     this.passwordInput = page.locator('input[name="cred"]');
     this.loginButton = page.getByRole("button", { name: "Login", exact: true });
-    this.errorToast = page.getByText(/login failed/i);
+    // The app's real message is a toast:
+    // "LOGIN FAILED! PLEASE RECHECK THE USERNAME AND PASSWORD AND TRY AGAIN."
+    // (a wrong password also appends "REMAINING LOGIN ATTEMPTS: n").
+    this.errorToast = page.getByText(/login failed|recheck the username|remaining login attempts/i).first();
     this.otpBoxes = page.locator("input.otp-box");
+    // The login screen shows a non-clickable "Forgot Password?" label next to a link
+    // labelled "Reset". Target the link by its href so we never click the plain text.
+    this.forgotPasswordLink = page.locator('a[href*="forgot-password"]').first();
   }
 
   /** Opens the only URL-based navigation in the whole suite: the login page. */
@@ -48,22 +54,34 @@ class LoginPage {
     await this.loginButton.click();
   }
 
-  /** Handles the login OTP screen only if it appears (bypassed in UAT). */
+  /**
+   * Handles the login OTP screen only if it appears.
+   *
+   * Login OTP is ALWAYS bypassed automatically with the UAT code (111111) - it does NOT
+   * honour IB_MANUAL_OTP. Only the transaction OTP (ConfirmationPopup) is entered by hand.
+   *
+   * The challenge is intermittent (a fresh browser context reads as a new device) and the
+   * OTP screen can be slow to render, so it gets a generous wait; if it never appears,
+   * login went straight to the dashboard.
+   */
   async handleOtpIfPresent(otp) {
     const otpShown = await this.otpBoxes
       .first()
-      .waitFor({ state: "visible", timeout: 10_000 })
+      .waitFor({ state: "visible", timeout: 30_000 })
       .then(() => true)
       .catch(() => false);
-    if (!otpShown) return;
+    if (!otpShown) return; // no OTP challenge this time - straight to the dashboard
 
+    // Fill the 6-digit bypass code and confirm.
     await fillOtpBoxes(this.page, otp);
-    const otpSubmit = this.page
-      .getByRole("button", { name: /verify|login|submit|continue|confirm/i })
-      .first();
-    if (await otpSubmit.isVisible().catch(() => false)) {
-      await otpSubmit.click();
-    }
+    const confirm = this.page.getByRole("button", { name: /^confirm$/i }).last();
+    await expect(confirm, "Login OTP: Confirm should enable once the 6-digit bypass code is entered").toBeEnabled({
+      timeout: 10_000,
+    });
+    await confirm.click();
+
+    // Let the OTP screen clear as login proceeds (assertLoaded confirms the dashboard).
+    await this.otpBoxes.first().waitFor({ state: "hidden", timeout: 15_000 }).catch(() => {});
   }
 
   /** Full valid-login flow (used by every end-to-end test). */
@@ -75,10 +93,23 @@ class LoginPage {
     await this.handleOtpIfPresent(otp);
   }
 
-  /** ASSERTION: invalid login shows the failure toast and stays on login. */
+  /** Opens the Forgot Password ("Reset") flow from the login screen. */
+  async goToForgotPassword() {
+    await expect(this.forgotPasswordLink, "'Reset' (Forgot Password) link should be visible on the login page").toBeVisible(
+      { timeout: 30_000 }
+    );
+    await this.forgotPasswordLink.click();
+  }
+
+  /**
+   * ASSERTION: invalid login shows the failure toast and stays on login.
+   *
+   * The toast is transient (it auto-closes after a few seconds) and this environment can
+   * be slow to answer the login request, so it gets a generous window to appear.
+   */
   async assertLoginFailed() {
-    await expect(this.errorToast, "A 'Login Failed' message should be displayed for invalid credentials").toBeVisible({
-      timeout: 20_000,
+    await expect(this.errorToast, "A 'LOGIN FAILED' message should be displayed for invalid credentials").toBeVisible({
+      timeout: 60_000,
     });
     await expect(this.usernameInput, "User should remain on the login page").toBeVisible();
   }

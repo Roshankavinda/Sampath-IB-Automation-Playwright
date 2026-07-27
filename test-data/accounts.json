@@ -1,0 +1,28 @@
+{
+  "credentials": {
+    "username": "gsuser4",
+    "password": "Hoax@666",
+    "otp": "111111"
+  },
+  "invalidCredentials": {
+    "wrongPassword": {
+      "username": "v11user8",
+      "password": "Wrong@1234"
+    },
+    "unknownUser": {
+      "username": "invaliduser01",
+      "password": "Wrong@1234"
+    }
+  },
+  "webCard": {
+    "username": "v11user8",
+    "password": "Hoax@666",
+    "otp": "111111",
+    "residentType": "Resident"
+  },
+  "debitCardUser": {
+    "username": "v11user8",
+    "password": "Hoax@666",
+    "otp": "111111"
+  }
+}

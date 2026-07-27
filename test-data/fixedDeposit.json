@@ -1,0 +1,12 @@
+{
+  "residentType": "Resident",
+  "product": "Fixed Deposits 100,200,300 Days",
+  "tenure": "300 Days",
+  "interestMode": "Maturity",
+  "nickname": "PW Test FD",
+  "fundingAccount": "101850104310",
+  "amount": "25000",
+  "sourceOfFunds": "SALARY",
+  "interestAccount": "1018 5010 4310",
+  "autoRenew": false
+}

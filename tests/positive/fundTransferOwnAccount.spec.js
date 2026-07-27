@@ -1,16 +1,17 @@
-const { test } = require("../utils/fixtures");
-const { SendMoneyPage } = require("../pages/SendMoneyPage");
-const { OwnAccountPage } = require("../pages/OwnAccountPage");
-const { ConfirmationPopup } = require("../pages/ConfirmationPopup");
-const { credentials, ownTransfer } = require("../test-data/testData");
-const { getToastText } = require("../utils/helpers");
+const { test } = require("../../utils/fixtures");
+const { SendMoneyPage } = require("../../pages/SendMoneyPage");
+const { OwnAccountPage } = require("../../pages/OwnAccountPage");
+const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
+const { credentials } = require("../../test-data/accounts");
+const ownTransfer = require("../../test-data/ownTransfer");
+const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
- * Flow: Login -> Own Fund Transfer.
- * Navigation is by clicking; each page is validated by its heading/elements.
+ * Feature: Fund Transfer - Own Account — POSITIVE.
+ * Login -> Send Money -> Own Account -> fill -> One-time -> Submit -> OTP -> success.
  */
-test.describe("Own Account Fund Transfer", () => {
-  test("TC_OWN_01 - Login and transfer between own accounts (One-time)", async ({ page, loggedInDashboard }) => {
+test.describe("Fund Transfer - Own Account - Positive", () => {
+  test("TC_FT_OWN_H01 - Transfer between own accounts (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const ownAccount = new OwnAccountPage(page);
     const popup = new ConfirmationPopup(page);
@@ -23,6 +24,7 @@ test.describe("Own Account Fund Transfer", () => {
     await test.step("Open the 'Own Account' tab and validate the form", async () => {
       await sendMoney.selectOwnAccountTab();
       await ownAccount.assertLoaded();
+      await ownAccount.assertFormValidations();
     });
 
     await test.step("Fill the own account transfer details", async () => {
@@ -48,10 +50,5 @@ test.describe("Own Account Fund Transfer", () => {
     });
   });
 
-  test.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== testInfo.expectedStatus) {
-      const toast = await getToastText(page, 1_500);
-      if (toast) await testInfo.attach("last-toast-message", { body: toast, contentType: "text/plain" });
-    }
-  });
+  test.afterEach(async ({ page }, testInfo) => attachToastOnFailure(page, testInfo));
 });

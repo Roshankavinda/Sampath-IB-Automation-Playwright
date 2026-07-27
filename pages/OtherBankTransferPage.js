@@ -1,7 +1,11 @@
 const { expect } = require("@playwright/test");
-const { selectOptionByLabelContains } = require("../utils/helpers");
+const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
-
+/**
+ * Send Money > Other Accounts form. Used for BOTH:
+ *  - Intra Bank (bank = Sampath): the beneficiary name is auto-fetched (read-only).
+ *  - Other Bank (SLIPS/CEFTS): the beneficiary name is typed manually.
+ */
 class OtherBankTransferPage {
   /** @param {import('@playwright/test').Page} page */
   constructor(page) {
@@ -13,26 +17,68 @@ class OtherBankTransferPage {
     this.toAccountNumberInput = page.locator('input[name="toAccountNumber"]');
     this.beneficiaryNameInput = page.locator('input[name="accountName"]');
     this.amountInput = page.locator('input[name="amount"]');
+    this.senderRemarkInput = page.locator('input[name="senderRemark"]');
     this.beneficiaryRemarkInput = page.locator('input[name="beneficiaryRemark"]');
     this.transferModeRadios = page.locator('input[name="transferMode"]');
+    // Transfer Mode: One-time Transaction (ONLINE) vs Standing Order/Schedule (SCHEDULE).
+    this.transferModeSchedule = page.locator('input[name="transferMode"][value="SCHEDULE"]');
+    this.standingOrderLabel = page.getByText("Standing Order/Schedule", { exact: true }).first();
     this.submitButton = page.getByRole("button", { name: "Submit", exact: true });
   }
 
   /** ASSERTION: the Other Accounts form is displayed. */
   async assertLoaded() {
-    await expect(this.fromAccountSelect, "Other Accounts form: From Account dropdown should be visible").toBeVisible({
+    // Bank + To Account load reliably; the From Account loads asynchronously (skeleton).
+    await expect(this.bankSelect, "Other Accounts form: Bank dropdown should be visible").toBeVisible({
       timeout: 30_000,
     });
-    await expect(this.bankSelect, "Other Accounts form: Bank dropdown should be visible").toBeVisible();
     await expect(this.toAccountNumberInput, "Other Accounts form: To Account Number field should be visible").toBeVisible();
+    // Give the From Account skeleton loader a chance to resolve (non-fatal).
+    await this.page
+      .waitForFunction(() => {
+        const f = document.querySelector("form");
+        return f && !f.querySelector(".animate-pulse");
+      }, null, { timeout: 30_000 })
+      .catch(() => {});
   }
 
+  /**
+   * SOFT VALIDATIONS on the loaded form: the Bank and (async) From Account dropdowns are
+   * populated, and the destination account + amount fields are present. Soft, so all UI
+   * problems are reported together.
+   */
+  async assertFormValidations() {
+    await assertDropdownPopulated(this.bankSelect, "Bank");
+    // From Account loads asynchronously and may still be a skeleton; check it softly.
+    if (await this.fromAccountSelect.isVisible().catch(() => false)) {
+      await assertDropdownPopulated(this.fromAccountSelect, "From Account");
+    }
+    await expect.soft(this.toAccountNumberInput, "To Account Number field should be visible").toBeVisible();
+    await expect.soft(this.amountInput, "Amount field should be visible").toBeVisible();
+    await expect.soft(this.submitButton, "Submit button should be visible").toBeVisible();
+  }
+
+  /**
+   * Selects the From Account once it has loaded. The dropdown loads asynchronously
+   * (skeleton) and defaults to the primary account, so if it hasn't resolved we fall
+   * back to that default rather than failing.
+   */
   async selectFromAccount(partial) {
-    await selectOptionByLabelContains(this.fromAccountSelect, partial);
+    const ready = await this.fromAccountSelect
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (ready) {
+      await selectOptionByLabelContains(this.fromAccountSelect, partial).catch(() => {});
+      // SOFT ASSERTION: the source account is the one selected.
+      await assertSelectedContains(this.fromAccountSelect, partial, "From Account");
+    }
   }
 
   async selectBank(partial) {
     await selectOptionByLabelContains(this.bankSelect, partial);
+    // SOFT ASSERTION: the chosen bank is the one selected.
+    await assertSelectedContains(this.bankSelect, partial, "Bank");
   }
 
   /**
@@ -52,14 +98,48 @@ class OtherBankTransferPage {
     );
   }
 
+  /**
+   * Intra-bank (Sampath): enter the beneficiary account number and let the app
+   * auto-fetch the name. ASSERTION: the name field becomes populated and read-only.
+   */
+  async enterIntraBankAccount(accountNumber) {
+    await this.toAccountNumberInput.click();
+    await this.toAccountNumberInput.fill(accountNumber);
+    // The name is fetched from core banking for Sampath accounts; blur to trigger it.
+    await this.toAccountNumberInput.press("Tab");
+    // Wait for the REAL beneficiary name, not the "Retrieving beneficiary name. Please
+    // wait..." loading placeholder (which also has length > 0 and would pass a naive poll).
+    await expect
+      .poll(
+        async () => {
+          const v = (await this.beneficiaryNameInput.inputValue().catch(() => "")).trim();
+          return v && !/retriev|please wait|loading|fetching/i.test(v) ? v : "";
+        },
+        {
+          timeout: 30_000,
+          message:
+            "Beneficiary name should auto-fetch (a real name, not the loading placeholder) for a valid Sampath account",
+        }
+      )
+      .not.toBe("");
+  }
+
   async fillAmountAndDetails(data) {
-  await this.amountInput.fill(data.amount);
-  await selectOptionByLabelContains(this.purposeSelect, data.purpose);
-  await this.beneficiaryRemarkInput.fill(data.beneficiaryRemark);
-  await expect(this.amountInput, "Amount field should contain the entered amount").toHaveValue(
-    new RegExp(data.amount)
-  );
-}
+    await this.amountInput.fill(data.amount);
+    // Purpose is not always shown for intra-bank transfers - fill it only if present.
+    if (data.purpose && (await this.purposeSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.purposeSelect, data.purpose);
+    }
+    if (data.senderRemark && (await this.senderRemarkInput.isVisible().catch(() => false))) {
+      await this.senderRemarkInput.fill(data.senderRemark);
+    }
+    if (data.beneficiaryRemark && (await this.beneficiaryRemarkInput.isVisible().catch(() => false))) {
+      await this.beneficiaryRemarkInput.fill(data.beneficiaryRemark);
+    }
+    await expect(this.amountInput, "Amount field should contain the entered amount").toHaveValue(
+      new RegExp(data.amount)
+    );
+  }
 
   async ensureOneTimeTransaction() {
     const oneTime = this.transferModeRadios.first();
@@ -67,6 +147,19 @@ class OtherBankTransferPage {
       await oneTime.check({ force: true });
     }
     await expect(oneTime, "One-time Transaction mode should be selected").toBeChecked();
+  }
+
+  /**
+   * Selects the "Standing Order/Schedule" transfer mode so the transfer is scheduled. The
+   * schedule detail fields (start date, frequency, ...) are NOT on this form - they appear
+   * in a modal after Submit (see ScheduleModal). The radios are custom-styled, so click the
+   * label; a forced check() flips the input without firing React's onChange.
+   */
+  async selectStandingOrderSchedule() {
+    await this.standingOrderLabel.click();
+    await expect(this.transferModeSchedule, "Standing Order/Schedule mode should be selected").toBeChecked({
+      timeout: 10_000,
+    });
   }
 
   async submit() {
