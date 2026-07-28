@@ -1,13 +1,16 @@
 const { test } = require("../../utils/fixtures");
 const { FixedDepositPage } = require("../../pages/FixedDepositPage");
+const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
 const fixedDeposit = require("../../test-data/fixedDeposit");
+const { credentials } = require("../../test-data/accounts");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
  * Feature: FD Create (Open New Fixed Deposit) — POSITIVE.
  * Dashboard tile "Open New Fixed Deposit" -> step 1 resident type -> step 2 FD details
  * (product, tenure, interest mode, nickname, funding account, amount, source of funds,
- * interest-credit account) -> Continue -> review.
+ * interest-credit account) -> Continue -> review + USER AGREEMENT (view + tick to accept)
+ * -> Submit -> (OTP if requested) -> success.
  */
 test.describe("FD Create - Positive", () => {
   test("TC_FD_H01 - Open a new Fixed Deposit", async ({ page, loggedInDashboard }) => {
@@ -40,9 +43,28 @@ test.describe("FD Create - Positive", () => {
       await fd.fillDetails(fixedDeposit);
     });
 
-    await test.step("Continue and validate the wizard advances past the details step", async () => {
+    await test.step("Continue to the review / user-agreement step", async () => {
       await fd.continueToReview();
-      await fd.assertMovedPastDetailsStep();
+      await fd.assertReviewAgreementStep();
+    });
+
+    await test.step("View the user agreement and accept it (tick the checkbox)", async () => {
+      await fd.viewUserAgreement();
+      await fd.acceptAgreement();
+    });
+
+    await test.step("Submit the Fixed Deposit, entering the OTP if requested", async () => {
+      await fd.confirmFd();
+      const popup = new ConfirmationPopup(page);
+      const otpRequested = await popup.otpBoxes
+        .first()
+        .waitFor({ state: "visible", timeout: 12_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (otpRequested) {
+        await popup.enterOtpAndConfirm(credentials.otp);
+      }
+      await fd.assertFdSubmitted();
     });
   });
 

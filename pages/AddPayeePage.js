@@ -137,6 +137,18 @@ class AddPayeePage {
   }
 
   /**
+   * Fills ONLY the provided fields (skips undefined) - for partial "<field> is required"
+   * negatives. Dropdowns first (changing the Bank clears the Account Holder's Name).
+   */
+  async fillPartial({ type, bank, accountName, nickName, accountNumber } = {}) {
+    if (type) await selectOptionByLabelContains(this.typeSelect, type).catch(() => {});
+    if (bank) await selectOptionByLabelContains(this.bankSelect, bank).catch(() => {});
+    if (accountName) await this.accountNameInput.fill(accountName);
+    if (nickName) await this.nickNameInput.fill(nickName);
+    if (accountNumber) await this.accountNumberInput.fill(accountNumber);
+  }
+
+  /**
    * Clicks Next to submit the payee. The save is OTP-gated: clicking Next opens the OTP/
    * confirmation popup, so this does NOT block waiting for a save response (that only lands
    * after the OTP is confirmed). The save response is captured in the background so a

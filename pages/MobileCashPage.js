@@ -120,6 +120,34 @@ class MobileCashPage {
     });
     await this.submitButton.click();
   }
+
+  // ---- helpers for the negative / validation suite ----
+
+  /** ASSERTION: the Purpose dropdown loaded with selectable values. */
+  async assertPurposePopulated() {
+    await assertDropdownPopulated(this.purposeSelect, "Purpose");
+  }
+
+  /**
+   * Fills ONLY the provided fields (skips undefined). Unlike fillForm(), the re-enter mobile
+   * number is set independently so a MISMATCH can be exercised.
+   */
+  async fillPartial({ nic, mobileNumber, reMobileNumber, receiverName, amount, purpose, remark } = {}) {
+    if (nic) await this.nicInput.fill(String(nic));
+    if (mobileNumber != null) await this.mobileNumberInput.fill(String(mobileNumber));
+    if (reMobileNumber != null) await this.reMobileNumberInput.fill(String(reMobileNumber));
+    if (receiverName) await this.receiverNameInput.fill(receiverName);
+    if (purpose && (await this.purposeSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.purposeSelect, purpose).catch(() => {});
+    }
+    if (amount != null) await this.amountInput.fill(String(amount));
+    if (remark) await this.remarkInput.fill(remark);
+  }
+
+  /** The amount field's current value, digits only. */
+  async amountDigits() {
+    return String(await this.amountInput.inputValue().catch(() => "")).replace(/\D/g, "");
+  }
 }
 
 module.exports = { MobileCashPage };

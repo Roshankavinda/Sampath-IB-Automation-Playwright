@@ -142,6 +142,18 @@ class AddBillerPage {
   }
 
   /**
+   * Fills ONLY the provided text fields (skips undefined) - for partial "<field> is required"
+   * negatives. Call selectCategoryAndBiller() first so the reference field exists.
+   */
+  async fillPartial({ templateName, amount, referenceValue } = {}) {
+    if (templateName != null) await this.templateNameInput.fill(String(templateName));
+    if (amount != null) await this.amountInput.fill(String(amount));
+    if (referenceValue != null && (await this.referenceInput.isVisible().catch(() => false))) {
+      await this.referenceInput.fill(String(referenceValue));
+    }
+  }
+
+  /**
    * Clicks Next to submit the biller. The save is OTP-gated (Next opens the OTP/confirmation
    * popup), so this does NOT block waiting for a save response. The response is captured in
    * the background so a rejection can still be reported precisely by assertBillerSaved().

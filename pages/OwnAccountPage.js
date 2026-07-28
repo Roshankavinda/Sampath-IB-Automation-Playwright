@@ -120,6 +120,44 @@ class OwnAccountPage {
     await this.submitButton.click();
   }
 
+  // ---- helpers for the negative / validation suite ----
+
+  /** ASSERTION: both account dropdowns loaded with selectable values (not empty skeletons). */
+  async assertAccountsPopulated() {
+    await assertDropdownPopulated(this.fromAccountSelect, "From Account");
+    await assertDropdownPopulated(this.toAccountSelect, "To Account");
+  }
+
+  /**
+   * Fills ONLY the provided fields (skips undefined) - for partial "<field> is required"
+   * negatives. Unlike fillForm() it makes no From != To / amount assertions.
+   */
+  async fillPartial({ fromAccount, toAccount, amount, senderRemark, beneficiaryRemark } = {}) {
+    if (fromAccount) await selectOptionByLabelContains(this.fromAccountSelect, fromAccount).catch(() => {});
+    if (toAccount) await selectOptionByLabelContains(this.toAccountSelect, toAccount).catch(() => {});
+    if (amount != null) await this.amountInput.fill(String(amount));
+    if (senderRemark) await this.senderRemarkInput.fill(senderRemark);
+    if (beneficiaryRemark) await this.beneficiaryRemarkInput.fill(beneficiaryRemark);
+  }
+
+  /** The amount field's current value, digits only (the field reformats "1000" -> "LKR 1,000.00"). */
+  async amountDigits() {
+    return String(await this.amountInput.inputValue().catch(() => "")).replace(/\D/g, "");
+  }
+
+  /**
+   * Tries to set the SAME account on both From and To. Some apps exclude the From account
+   * from the To list, so this reports whether the To dropdown actually accepted it.
+   * @returns {{ fromVal: string, toVal: string, matched: boolean }}
+   */
+  async trySameAccountBothSides(accountPartial) {
+    await selectOptionByLabelContains(this.fromAccountSelect, accountPartial).catch(() => {});
+    const fromVal = await this.fromAccountSelect.inputValue().catch(() => "");
+    await this.toAccountSelect.selectOption(fromVal).catch(() => {});
+    const toVal = await this.toAccountSelect.inputValue().catch(() => "");
+    return { fromVal, toVal, matched: fromVal !== "" && fromVal === toVal };
+  }
+
   /** ASSERTION: an empty form is blocked with inline "<field> is required" messages. */
   async assertRequiredValidationShown() {
     await expect(

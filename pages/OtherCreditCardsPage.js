@@ -112,6 +112,47 @@ class OtherCreditCardsPage {
     });
     await this.submitButton.click();
   }
+
+  // ---- helpers for the negative / validation suite ----
+
+  /** ASSERTION: the Bank (issuer) and From Account dropdowns loaded with selectable values. */
+  async assertDropdownsPopulated() {
+    await assertDropdownPopulated(this.bankSelect, "Bank (card issuer)");
+    if (await this.fromAccountSelect.isVisible().catch(() => false)) {
+      await assertDropdownPopulated(this.fromAccountSelect, "From Account");
+    }
+  }
+
+  /**
+   * Fills ONLY the provided fields (skips undefined). The re-enter card number is set
+   * independently so a MISMATCH can be exercised.
+   */
+  async fillPartial({ fromAccount, cardNumber, reCardNumber, cardName, bank, amount, purpose, senderRemark, beneficiaryRemark } = {}) {
+    if (fromAccount && (await this.fromAccountSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.fromAccountSelect, fromAccount).catch(() => {});
+    }
+    if (cardNumber != null) await this.cardNumberInput.fill(String(cardNumber));
+    if (reCardNumber != null) await this.reCardNumberInput.fill(String(reCardNumber));
+    if (cardName) await this.cardNameInput.fill(cardName);
+    if (bank && (await this.bankSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.bankSelect, bank).catch(() => {});
+    }
+    if (amount != null) await this.amountInput.fill(String(amount));
+    if (purpose && (await this.purposeSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.purposeSelect, purpose).catch(() => {});
+    }
+    if (senderRemark && (await this.senderRemarkInput.isVisible().catch(() => false))) {
+      await this.senderRemarkInput.fill(senderRemark);
+    }
+    if (beneficiaryRemark && (await this.beneficiaryRemarkInput.isVisible().catch(() => false))) {
+      await this.beneficiaryRemarkInput.fill(beneficiaryRemark);
+    }
+  }
+
+  /** The amount field's current value, digits only. */
+  async amountDigits() {
+    return String(await this.amountInput.inputValue().catch(() => "")).replace(/\D/g, "");
+  }
 }
 
 module.exports = { OtherCreditCardsPage };

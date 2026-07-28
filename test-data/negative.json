@@ -1,5 +1,12 @@
 {
   "ownTransfer": {
+    "base": {
+      "fromAccount": "1018 5010 4310",
+      "toAccount": "1018 5525 0495",
+      "amount": "500",
+      "senderRemark": "PW Neg",
+      "beneficiaryRemark": "PW Neg"
+    },
     "insufficientFunds": {
       "fromAccount": "1018 5010 4310",
       "toAccount": "0018 5002 2719",
@@ -15,9 +22,47 @@
       "senderRemark": "PW Neg ZeroAmount",
       "beneficiaryRemark": "PW Neg ZeroAmount",
       "expectedError": "minimum|greater than|amount|valid"
+    },
+    "negativeAmount": {
+      "fromAccount": "1018 5010 4310",
+      "toAccount": "1018 5525 0495",
+      "amount": "-100",
+      "senderRemark": "PW Neg NegativeAmount",
+      "beneficiaryRemark": "PW Neg NegativeAmount",
+      "expectedError": "greater than|valid|amount|invalid"
+    },
+    "nonNumericAmount": {
+      "fromAccount": "1018 5010 4310",
+      "toAccount": "1018 5525 0495",
+      "amount": "abcd",
+      "senderRemark": "PW Neg NonNumeric",
+      "beneficiaryRemark": "PW Neg NonNumeric",
+      "expectedError": "required|valid|amount|numeric"
+    },
+    "sameAccount": {
+      "account": "1018 5010 4310",
+      "amount": "500",
+      "senderRemark": "PW Neg SameAccount",
+      "beneficiaryRemark": "PW Neg SameAccount",
+      "expectedError": "different|same|from.*to|not allowed|cannot"
+    },
+    "requiredFields": {
+      "toAccount": "to account is required",
+      "amount": "amount is required",
+      "senderRemark": "sender remark is required",
+      "beneficiaryRemark": "beneficiary remark is required"
     }
   },
   "intraBankTransfer": {
+    "base": {
+      "fromAccount": "1018 5010 4310",
+      "bank": "Sampath",
+      "toAccountNumber": "101358394971",
+      "amount": "100",
+      "purpose": "Wages & Salaries",
+      "senderRemark": "PW Neg",
+      "beneficiaryRemark": "PW Neg"
+    },
     "invalidAccount": {
       "fromAccount": "1018 5010 4310",
       "bank": "Sampath",
@@ -25,10 +70,28 @@
       "amount": "100",
       "purpose": "Wages & Salaries",
       "beneficiaryRemark": "PW Neg IntraInvalid",
-      "expectedError": "invalid|not valid|account number|not found"
+      "expectedError": "invalid|not valid|account number|not found|retriev"
+    },
+    "zeroAmount": { "amount": "0", "expectedError": "minimum|greater than|amount|valid" },
+    "negativeAmount": { "amount": "-100", "expectedError": "greater than|valid|amount|invalid" },
+    "nonNumericAmount": { "amount": "abcd", "expectedError": "required|valid|amount|numeric" },
+    "requiredFields": {
+      "toAccount": "account number is required|to account.*required|account.*required",
+      "amount": "amount is required",
+      "bank": "bank is required|select.*bank"
     }
   },
   "otherBankTransfer": {
+    "base": {
+      "fromAccount": "1018 5010 4310",
+      "bank": "TEST BANK B",
+      "toAccountNumber": "9901234561",
+      "beneficiaryName": "Test User",
+      "amount": "100",
+      "purpose": "Wages & Salaries",
+      "senderRemark": "PW Neg",
+      "beneficiaryRemark": "PW Neg"
+    },
     "invalidAccount": {
       "fromAccount": "1018 5010 4310",
       "bank": "TEST BANK B",
@@ -38,9 +101,25 @@
       "purpose": "Wages & Salaries",
       "beneficiaryRemark": "PW Neg InvalidAccount",
       "expectedError": "invalid|not valid|account number|not found"
+    },
+    "zeroAmount": { "amount": "0", "expectedError": "minimum|greater than|amount|valid" },
+    "negativeAmount": { "amount": "-100", "expectedError": "greater than|valid|amount|invalid" },
+    "nonNumericAmount": { "amount": "abcd", "expectedError": "required|valid|amount|numeric" },
+    "requiredFields": {
+      "toAccount": "account number is required|to account.*required|account.*required",
+      "beneficiaryName": "beneficiary name is required|name is required|beneficiary.*required",
+      "amount": "amount is required"
     }
   },
   "mobileCash": {
+    "base": {
+      "nic": "199012345678",
+      "mobileNumber": "0771234567",
+      "receiverName": "PW Neg Receiver",
+      "purpose": "Family Remittances",
+      "amount": "1000",
+      "remark": "PW Neg"
+    },
     "invalidMobile": {
       "nic": "199012345678",
       "mobileNumber": "123",
@@ -49,9 +128,32 @@
       "amount": "1000",
       "remark": "PW Neg MobileCash",
       "expectedError": "invalid|mobile|number|digits"
+    },
+    "mismatchedMobile": {
+      "mobileNumber": "0771234567",
+      "reMobileNumber": "0770000000",
+      "expectedError": "match|same|re-?enter|do not|mismatch"
+    },
+    "zeroAmount": { "amount": "0", "expectedError": "minimum|greater than|amount|valid" },
+    "negativeAmount": { "amount": "-100", "expectedError": "greater than|valid|amount|invalid" },
+    "nonNumericAmount": { "amount": "abcd", "expectedError": "required|valid|amount|numeric" },
+    "requiredFields": {
+      "mobile": "mobile.*required|number.*required",
+      "amount": "amount is required",
+      "nic": "nic is required"
     }
   },
   "otherCreditCardTransfer": {
+    "base": {
+      "fromAccount": "1018 5010 4310",
+      "bank": "Nations Trust",
+      "cardNumber": "376657973920377",
+      "cardName": "Card Holder",
+      "amount": "100",
+      "purpose": "Wages & Salaries",
+      "senderRemark": "PW Neg",
+      "beneficiaryRemark": "PW Neg"
+    },
     "invalidCard": {
       "fromAccount": "1018 5010 4310",
       "cardNumber": "1234",
@@ -59,6 +161,18 @@
       "amount": "100",
       "beneficiaryRemark": "PW Neg CardInvalid",
       "expectedError": "invalid|card|number|valid"
+    },
+    "mismatchedCard": {
+      "cardNumber": "376657973920377",
+      "reCardNumber": "376657973920000",
+      "expectedError": "match|same|re-?enter|do not|mismatch"
+    },
+    "zeroAmount": { "amount": "0", "expectedError": "minimum|greater than|amount|valid" },
+    "negativeAmount": { "amount": "-100", "expectedError": "greater than|valid|amount|invalid" },
+    "nonNumericAmount": { "amount": "abcd", "expectedError": "required|valid|amount|numeric" },
+    "requiredFields": {
+      "cardNumber": "card number is required|can is required|card.*required",
+      "amount": "amount is required"
     }
   },
   "ownCardSettlement": {
@@ -83,13 +197,33 @@
     }
   },
   "newPayee": {
-    "emptyForm": {
-      "expectedError": "is required"
+    "base": {
+      "type": "Account",
+      "bank": "TEST BANK B",
+      "accountName": "Test User",
+      "nickName": "PWNeg",
+      "accountNumber": "9901234561"
+    },
+    "emptyForm": { "expectedError": "is required" },
+    "requiredFields": {
+      "nickName": "nickname is required|nick.*required",
+      "accountNumber": "account number is required|account.*required",
+      "accountName": "account holder|name is required|holder.*required"
     }
   },
   "newBiller": {
-    "emptyForm": {
-      "expectedError": "is required"
+    "base": {
+      "category": "Telephone",
+      "biller": "Dialog Mobile",
+      "templateName": "PWNeg",
+      "amount": "500",
+      "referenceValue": "0771234567"
+    },
+    "emptyForm": { "expectedError": "is required" },
+    "zeroAmount": { "amount": "0", "expectedError": "minimum|greater than|amount|valid|required" },
+    "requiredFields": {
+      "templateName": "template name is required|template.*required|name is required",
+      "amount": "amount is required"
     }
   },
   "savedPayeeTransfer": {
@@ -142,6 +276,13 @@
       "account": "1018 5010 4310",
       "amount": "0",
       "expectedError": "minimum|greater than|amount|valid|required"
+    }
+  },
+  "message": {
+    "base": { "subject": "Card Center Inquiry", "subCategory": "General Request", "body": "PW neg message" },
+    "requiredFields": {
+      "subject": "subject.*required|select.*subject|required",
+      "body": "message.*required|body.*required|required"
     }
   }
 }

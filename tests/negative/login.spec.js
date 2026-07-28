@@ -4,55 +4,70 @@ const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
  * Feature: Login (Username & Password) — NEGATIVE / VALIDATION.
+ *   N01 wrong password -> login failure
+ *   N02 unknown username -> rejected
+ *   N03 empty credentials -> Login disabled
+ *   N04 only username (no password) -> Login disabled
+ *   N05 only password (no username) -> Login disabled
+ *   N06 password field is masked (type=password)
+ *
+ * NOTE: only N01/N02 actually submit. To avoid locking the account, no further wrong-login
+ * submissions are added - the extra cases assert client-side state without submitting.
  */
 test.describe("Login - Negative & Validation", () => {
   test("TC_LOGIN_N01 - Wrong password shows a login failure message", async ({ loginPage }) => {
     const data = invalidCredentials.wrongPassword;
-
-    await test.step("Open the login page", async () => {
-      await loginPage.open();
-      await loginPage.assertLoaded();
-    });
-
-    await test.step("Enter a wrong password and click Login", async () => {
-      await loginPage.enterCredentials(data.username, data.password);
-      await loginPage.clickLogin();
-    });
-
-    await test.step("Validate the login failure message and that we stay on login", async () => {
-      await loginPage.assertLoginFailed();
-    });
+    await loginPage.open();
+    await loginPage.assertLoaded();
+    await loginPage.enterCredentials(data.username, data.password);
+    await loginPage.clickLogin();
+    await loginPage.assertLoginFailed();
   });
 
   test("TC_LOGIN_N02 - Unknown username is rejected", async ({ loginPage }) => {
     const data = invalidCredentials.unknownUser;
-
-    await test.step("Open the login page", async () => {
-      await loginPage.open();
-      await loginPage.assertLoaded();
-    });
-
-    await test.step("Enter an unknown username and click Login", async () => {
-      await loginPage.enterCredentials(data.username, data.password);
-      await loginPage.clickLogin();
-    });
-
-    await test.step("Validate the login failure message", async () => {
-      await loginPage.assertLoginFailed();
-    });
+    await loginPage.open();
+    await loginPage.assertLoaded();
+    await loginPage.enterCredentials(data.username, data.password);
+    await loginPage.clickLogin();
+    await loginPage.assertLoginFailed();
   });
 
   test("TC_LOGIN_N03 - Login button is disabled with empty credentials", async ({ loginPage }) => {
-    await test.step("Open the login page", async () => {
-      await loginPage.open();
-      await loginPage.assertLoaded();
+    await loginPage.open();
+    await loginPage.assertLoaded();
+    await expect(loginPage.loginButton, "Login should be disabled until credentials are entered").toBeDisabled({
+      timeout: 10_000,
     });
+  });
 
-    await test.step("With username & password empty, Login must be disabled", async () => {
-      await expect(loginPage.loginButton, "Login should be disabled until credentials are entered").toBeDisabled({
-        timeout: 10_000,
-      });
+  test("TC_LOGIN_N04 - Login is disabled with only the username filled", async ({ loginPage }) => {
+    await loginPage.open();
+    await loginPage.assertLoaded();
+    await loginPage.usernameInput.click();
+    await loginPage.usernameInput.pressSequentially("gsuser4", { delay: 20 });
+    await expect(loginPage.loginButton, "Login should stay disabled without a password").toBeDisabled({
+      timeout: 10_000,
     });
+  });
+
+  test("TC_LOGIN_N05 - Login is disabled with only the password filled", async ({ loginPage }) => {
+    await loginPage.open();
+    await loginPage.assertLoaded();
+    await loginPage.passwordInput.click();
+    await loginPage.passwordInput.pressSequentially("Hoax@666", { delay: 20 });
+    await expect(loginPage.loginButton, "Login should stay disabled without a username").toBeDisabled({
+      timeout: 10_000,
+    });
+  });
+
+  test("TC_LOGIN_N06 - Password field masks its input", async ({ loginPage }) => {
+    await loginPage.open();
+    await loginPage.assertLoaded();
+    await expect(loginPage.passwordInput, "The password field should be of type=password (masked)").toHaveAttribute(
+      "type",
+      "password"
+    );
   });
 
   test.afterEach(async ({ page }, testInfo) => attachToastOnFailure(page, testInfo));

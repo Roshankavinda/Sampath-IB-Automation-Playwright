@@ -184,6 +184,50 @@ class OtherBankTransferPage {
     });
     await this.submitButton.click();
   }
+
+  // ---- helpers for the negative / validation suite ----
+
+  /** ASSERTION: the Bank, From Account and Purpose dropdowns loaded with selectable values. */
+  async assertDropdownsPopulated() {
+    await assertDropdownPopulated(this.bankSelect, "Bank");
+    if (await this.fromAccountSelect.isVisible().catch(() => false)) {
+      await assertDropdownPopulated(this.fromAccountSelect, "From Account");
+    }
+    if (await this.purposeSelect.isVisible().catch(() => false)) {
+      await assertDropdownPopulated(this.purposeSelect, "Purpose");
+    }
+  }
+
+  /**
+   * Fills ONLY the provided fields (skips undefined) - for partial "<field> is required"
+   * negatives. Makes no beneficiary/amount assertions.
+   */
+  async fillPartial({ fromAccount, bank, toAccountNumber, beneficiaryName, amount, purpose, senderRemark, beneficiaryRemark } = {}) {
+    if (fromAccount) await this.selectFromAccount(fromAccount).catch(() => {});
+    if (bank) await selectOptionByLabelContains(this.bankSelect, bank).catch(() => {});
+    if (toAccountNumber) {
+      await this.toAccountNumberInput.click();
+      await this.toAccountNumberInput.fill(toAccountNumber);
+    }
+    if (beneficiaryName && (await this.beneficiaryNameInput.isEditable().catch(() => false))) {
+      await this.beneficiaryNameInput.fill(beneficiaryName);
+    }
+    if (amount != null) await this.amountInput.fill(String(amount));
+    if (purpose && (await this.purposeSelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.purposeSelect, purpose).catch(() => {});
+    }
+    if (senderRemark && (await this.senderRemarkInput.isVisible().catch(() => false))) {
+      await this.senderRemarkInput.fill(senderRemark);
+    }
+    if (beneficiaryRemark && (await this.beneficiaryRemarkInput.isVisible().catch(() => false))) {
+      await this.beneficiaryRemarkInput.fill(beneficiaryRemark);
+    }
+  }
+
+  /** The amount field's current value, digits only (the field reformats what was typed). */
+  async amountDigits() {
+    return String(await this.amountInput.inputValue().catch(() => "")).replace(/\D/g, "");
+  }
 }
 
 module.exports = { OtherBankTransferPage };

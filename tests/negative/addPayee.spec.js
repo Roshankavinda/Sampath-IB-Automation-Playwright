@@ -1,35 +1,74 @@
-const { test } = require("../../utils/fixtures");
+const { test, expect } = require("../../utils/fixtures");
 const { AddPayeePage } = require("../../pages/AddPayeePage");
-const { attachToastOnFailure } = require("../../utils/helpers");
+const negative = require("../../test-data/negative");
+const { attachToastOnFailure, assertValidationError } = require("../../utils/helpers");
 
 /**
  * Feature: Add New Payee — NEGATIVE / VALIDATION.
- * "Next" is not disabled on this form (once the bank list loads), so submitting it
- * empty must raise the inline "<field> is required" messages and keep the form open.
+ *   N01 Type / Bank dropdowns display selectable values
+ *   N02 empty form -> required-field errors
+ *   N03 missing Nickname -> required
+ *   N04 missing Account Number -> required
+ *   N05 missing Account Holder's Name -> required
+ * "Next" is not disabled on this form (once the bank list loads), so submitting an
+ * incomplete form must raise the inline "<field> is required" messages and keep it open.
  */
 test.describe("Add New Payee - Negative & Validation", () => {
-  test("TC_PAYEE_N01 - Empty payee form is blocked with required-field errors", async ({
-    page,
-    loggedInDashboard,
-  }) => {
+  const neg = negative.newPayee;
+
+  async function openForm(page, loggedInDashboard) {
     const payee = new AddPayeePage(page);
+    await loggedInDashboard.goToSavedPayees();
+    await payee.assertSavedPayeesLoaded();
+    await payee.openAddPayee();
+    return payee;
+  }
 
-    await test.step("Navigate to Payees & Billers > Saved Payees", async () => {
-      await loggedInDashboard.goToSavedPayees();
-      await payee.assertSavedPayeesLoaded();
-    });
+  test("TC_PAYEE_N01 - Type / Bank dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
+    const payee = await openForm(page, loggedInDashboard);
+    await payee.assertFormValidations();
+  });
 
-    await test.step("Open 'Add New Payee' and validate the form", async () => {
-      await payee.openAddPayee();
-    });
+  test("TC_PAYEE_N02 - Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
+    const payee = await openForm(page, loggedInDashboard);
+    await payee.nextButton.click();
+    await payee.assertRequiredValidationShown();
+  });
 
-    await test.step("Submit the empty form", async () => {
-      await payee.nextButton.click();
+  test("TC_PAYEE_N03 - Missing Nickname is blocked", async ({ page, loggedInDashboard }) => {
+    const payee = await openForm(page, loggedInDashboard);
+    await payee.fillPartial({
+      type: neg.base.type,
+      bank: neg.base.bank,
+      accountName: neg.base.accountName,
+      accountNumber: neg.base.accountNumber,
     });
+    await payee.nextButton.click();
+    await assertValidationError(page, neg.requiredFields.nickName);
+  });
 
-    await test.step("Validate the app blocks it with required-field messages", async () => {
-      await payee.assertRequiredValidationShown();
+  test("TC_PAYEE_N04 - Missing Account Number is blocked", async ({ page, loggedInDashboard }) => {
+    const payee = await openForm(page, loggedInDashboard);
+    await payee.fillPartial({
+      type: neg.base.type,
+      bank: neg.base.bank,
+      accountName: neg.base.accountName,
+      nickName: neg.base.nickName,
     });
+    await payee.nextButton.click();
+    await assertValidationError(page, neg.requiredFields.accountNumber);
+  });
+
+  test("TC_PAYEE_N05 - Missing Account Holder's Name is blocked", async ({ page, loggedInDashboard }) => {
+    const payee = await openForm(page, loggedInDashboard);
+    await payee.fillPartial({
+      type: neg.base.type,
+      bank: neg.base.bank,
+      nickName: neg.base.nickName,
+      accountNumber: neg.base.accountNumber,
+    });
+    await payee.nextButton.click();
+    await assertValidationError(page, neg.requiredFields.accountName);
   });
 
   test.afterEach(async ({ page }, testInfo) => attachToastOnFailure(page, testInfo));

@@ -89,6 +89,22 @@ class MessagesPage {
     await this.sendButton.click();
   }
 
+  // ---- helpers for the negative / validation suite ----
+
+  /** ASSERTION: the Subject dropdown loaded with selectable values. */
+  async assertSubjectPopulated() {
+    await assertDropdownPopulated(this.subjectSelect, "Subject");
+  }
+
+  /** Fills ONLY the provided fields (skips undefined) - for partial-required negatives. */
+  async fillPartial({ subject, subCategory, body } = {}) {
+    if (subject) await selectOptionByLabelContains(this.subjectSelect, subject).catch(() => {});
+    if (subCategory && (await this.subCategorySelect.isVisible().catch(() => false))) {
+      await selectOptionByLabelContains(this.subCategorySelect, subCategory).catch(() => {});
+    }
+    if (body != null) await this.messageInput.fill(String(body));
+  }
+
   // ---- Reply ----
 
   /**

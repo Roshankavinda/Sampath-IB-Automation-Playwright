@@ -53,6 +53,23 @@ class FixedDepositPage {
     this.continueButton = page.getByRole("button", { name: /^continue$/i });
     this.backButton = page.getByRole("button", { name: /^back$/i });
     this.tenureError = page.getByText(/select a tenure type/i);
+
+    // ---- Review / User Agreement step ----
+    // // VERIFY against the live app. The FD product / funding-account lists that gate step 2
+    // were backend-down across repeated probe attempts, so this step could NOT be observed
+    // live; it is built from this app's known agreement pattern (see WebCardPage): a "View
+    // user agreement" control + a checkbox to accept (native, or the custom square button).
+    this.userAgreementText = page
+      .getByText(/user agreement|i have read|i agree|agree to be bound|terms (and|&) conditions|declaration/i)
+      .first();
+    this.viewAgreementControl = page
+      .getByRole("link", { name: /user agreement|view agreement|agreement|terms/i })
+      .first();
+    this.agreementNativeCheckboxes = page.getByRole("checkbox");
+    this.agreementCustomCheckbox = page.locator('button[class*="appearance-none"]');
+    this.confirmFdButton = page
+      .getByRole("button", { name: /^(submit|confirm|proceed|agree.*continue)$/i })
+      .first();
   }
 
   /** ASSERTION: step 1 (resident type) is displayed. */
@@ -210,6 +227,95 @@ class FixedDepositPage {
       );
     }
     throw new Error("The FD wizard did not advance past step 2 (the details step).");
+  }
+
+  /**
+   * ASSERTION: the wizard reached the review step that presents the USER AGREEMENT to accept.
+   * Reuses the step-2 stuck diagnostic first, then checks the agreement acceptance is shown.
+   * // VERIFY the exact wording against the live app (see the constructor note).
+   */
+  async assertReviewAgreementStep() {
+    // Ensure we actually left step 2 (throws a precise reason if it is stuck there).
+    await this.assertMovedPastDetailsStep();
+    await expect(
+      this.userAgreementText,
+      "The FD review step should present a user agreement to accept. // VERIFY the wording if this fails on the right step."
+    ).toBeVisible({ timeout: 30_000 });
+  }
+
+  /**
+   * Opens/"views" the user agreement if there is a link/button to open it, then closes any
+   * preview dialog. Best-effort: if the agreement is shown inline, there is nothing to open.
+   */
+  async viewUserAgreement() {
+    const link = this.viewAgreementControl;
+    const btn = this.page.getByRole("button", { name: /user agreement|view agreement|terms/i }).first();
+    const target = (await link.isVisible().catch(() => false))
+      ? link
+      : (await btn.isVisible().catch(() => false))
+        ? btn
+        : null;
+    if (!target) return;
+    await target.click().catch(() => {});
+    await this.page.waitForTimeout(1000);
+    // Close a preview/modal if one opened, so the checkbox is reachable.
+    const close = this.page.getByRole("button", { name: /close|ok|done|got it|back|i have read/i }).first();
+    if (await close.isVisible().catch(() => false)) await close.click().catch(() => {});
+  }
+
+  /**
+   * Ticks the "I agree to the user agreement" checkbox. Handles both a native checkbox and
+   * the app's custom square-button checkbox (appearance-none), as used on the Web Card
+   * agreement. // VERIFY which control the FD review step actually uses.
+   */
+  async acceptAgreement() {
+    // Prefer a native checkbox (the last one on the page - step 2's Auto-renew is gone here).
+    const nativeCount = await this.agreementNativeCheckboxes.count().catch(() => 0);
+    if (nativeCount) {
+      const cb = this.agreementNativeCheckboxes.last();
+      await cb.check({ force: true }).catch(() => {});
+      if (await cb.isChecked().catch(() => false)) return;
+    }
+    // Else the custom square-button checkbox.
+    const custom = this.agreementCustomCheckbox.last();
+    if (await custom.isVisible().catch(() => false)) {
+      await custom.click({ force: true }).catch(() => {});
+      return;
+    }
+    throw new Error(
+      "Could not tick the FD user-agreement checkbox on the review step. // VERIFY the control against the live app " +
+        "(it is a native checkbox or a custom square button)."
+    );
+  }
+
+  /** Submits/confirms the FD after the agreement is accepted. */
+  async confirmFd() {
+    const button = (await this.confirmFdButton.isVisible().catch(() => false))
+      ? this.confirmFdButton
+      : this.continueButton.first();
+    await expect(button, "The FD Submit/Confirm button should be enabled after accepting the agreement").toBeEnabled({
+      timeout: 20_000,
+    });
+    await button.click();
+  }
+
+  /**
+   * ASSERTION (lenient): the FD was submitted. // VERIFY the exact success wording/OTP of the
+   * final step - it was not reachable during exploration (step-2 lists backend-down).
+   */
+  async assertFdSubmitted() {
+    const ok = await this.page
+      .getByText(/success|successful|created|opened|reference|thank you|step\s*4\s*of\s*4/i)
+      .first()
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!ok) {
+      throw new Error(
+        "The FD submission confirmation was not recognised after accepting the agreement. " +
+          "// VERIFY the final FD step (confirmation / OTP wording) against the live app."
+      );
+    }
   }
 }
 
