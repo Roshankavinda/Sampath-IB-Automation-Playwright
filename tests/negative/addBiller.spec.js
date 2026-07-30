@@ -24,18 +24,18 @@ test.describe("Add New Biller - Negative & Validation", () => {
     return biller;
   }
 
-  test("TC_BILLER_N01 - Category dropdown displays selectable values", async ({ page, loggedInDashboard }) => {
+  test("TC_BILLER_N01 - Verify that Category dropdown displays selectable values", async ({ page, loggedInDashboard }) => {
     const biller = await openForm(page, loggedInDashboard);
     await biller.assertFormValidations();
   });
 
-  test("TC_BILLER_N02 - Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
+  test("TC_BILLER_N02 - Verify that Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
     const biller = await openForm(page, loggedInDashboard);
     await biller.nextButton.click();
     await biller.assertRequiredValidationShown();
   });
 
-  test("TC_BILLER_N03 - Missing Template Name is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_BILLER_N03 - Verify that Missing Template Name is blocked", async ({ page, loggedInDashboard }) => {
     const biller = await openForm(page, loggedInDashboard);
     await biller.selectCategoryAndBiller(neg.base.category, neg.base.biller);
     await biller.fillPartial({ amount: neg.base.amount, referenceValue: neg.base.referenceValue });
@@ -43,7 +43,7 @@ test.describe("Add New Biller - Negative & Validation", () => {
     await assertValidationError(page, neg.requiredFields.templateName);
   });
 
-  test("TC_BILLER_N04 - Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_BILLER_N04 - Verify that Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
     const biller = await openForm(page, loggedInDashboard);
     await biller.selectCategoryAndBiller(neg.base.category, neg.base.biller);
     await biller.fillPartial({ templateName: neg.base.templateName, referenceValue: neg.base.referenceValue });
@@ -51,7 +51,7 @@ test.describe("Add New Biller - Negative & Validation", () => {
     await assertValidationError(page, neg.requiredFields.amount);
   });
 
-  test("TC_BILLER_N05 - Zero amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_BILLER_N05 - Verify that Zero amount is blocked", async ({ page, loggedInDashboard }) => {
     const biller = await openForm(page, loggedInDashboard);
     await biller.selectCategoryAndBiller(neg.base.category, neg.base.biller);
     await biller.fillPartial({

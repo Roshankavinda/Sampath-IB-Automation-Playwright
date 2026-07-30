@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
@@ -37,14 +38,14 @@ class OwnAccountPage {
    */
   async assertLoaded() {
     await expect(this.fromAccountSelect, "Own Account form: From Account dropdown should be visible").toBeVisible({
-      timeout: 90_000,
+      timeout: TIMEOUTS.VERY_SLOW,
     });
     await expect(
       this.toAccountSelect,
       "Own Account form: To Account dropdown should load (it is fetched after the From Account list)"
-    ).toBeVisible({ timeout: 90_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.VERY_SLOW });
     await expect(this.amountInput, "Own Account form: Amount field should be visible").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -86,7 +87,7 @@ class OwnAccountPage {
     const digits = (s) => String(s).replace(/\D/g, "");
     await expect
       .poll(async () => digits(await this.amountInput.inputValue()), {
-        timeout: 15_000,
+        timeout: TIMEOUTS.UI,
         message: "Amount field should contain the entered amount",
       })
       .toContain(digits(data.amount));
@@ -109,13 +110,13 @@ class OwnAccountPage {
   async selectStandingOrderSchedule() {
     await this.standingOrderLabel.click();
     await expect(this.transferModeSchedule, "Standing Order/Schedule mode should be selected").toBeChecked({
-      timeout: 10_000,
+      timeout: TIMEOUTS.QUICK,
     });
   }
 
   async submit() {
     await expect(this.submitButton, "Submit button should be enabled once the form is valid").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.submitButton.click();
   }
@@ -163,7 +164,7 @@ class OwnAccountPage {
     await expect(
       this.requiredError,
       "An inline 'is required' validation message should be shown when the form is empty"
-    ).toBeVisible({ timeout: 20_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.ACTION });
 
     // ASSERTION: the mandatory fields are each called out, and the form does not advance.
     await expect

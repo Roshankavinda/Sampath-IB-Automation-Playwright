@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
@@ -34,7 +35,7 @@ class OtherCreditCardsPage {
   /** ASSERTION: the Other Credit Cards form is displayed. */
   async assertLoaded() {
     await expect(this.cardNumberInput, "Other Credit Cards form: Card Number (CAN) field should be visible").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.amountInput, "Other Credit Cards form: Amount field should be visible").toBeVisible();
     // From Account loads asynchronously (skeleton loader); wait for it to resolve.
@@ -42,7 +43,7 @@ class OtherCreditCardsPage {
       .waitForFunction(() => {
         const f = document.querySelector("form");
         return f && !f.querySelector(".animate-pulse");
-      }, null, { timeout: 20_000 })
+      }, null, { timeout: TIMEOUTS.ACTION })
       .catch(() => {});
   }
 
@@ -108,7 +109,7 @@ class OtherCreditCardsPage {
 
   async submit() {
     await expect(this.submitButton, "Submit button should be enabled once the form is valid").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.submitButton.click();
   }

@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated } = require("../utils/helpers");
 
 /**
@@ -47,7 +48,7 @@ class MessagesPage {
   /** ASSERTION: the messaging page is displayed. */
   async assertLoaded() {
     await expect(this.composeButton, "'Compose New Message' should be visible on the messaging page").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
   }
 
@@ -55,7 +56,7 @@ class MessagesPage {
 
   async openCompose() {
     await this.composeButton.click();
-    await expect(this.subjectSelect, "Compose: the Subject dropdown should be shown").toBeVisible({ timeout: 30_000 });
+    await expect(this.subjectSelect, "Compose: the Subject dropdown should be shown").toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /** SOFT VALIDATIONS on the compose form. */
@@ -71,7 +72,7 @@ class MessagesPage {
     // The sub-category list is fetched from the chosen subject, so wait for it to populate.
     await expect
       .poll(async () => this.subCategorySelect.locator("option").count().catch(() => 0), {
-        timeout: 20_000,
+        timeout: TIMEOUTS.ACTION,
         message: `The sub-category list for subject "${data.subject}" should load`,
       })
       .toBeGreaterThan(1);
@@ -84,7 +85,7 @@ class MessagesPage {
 
   async send() {
     await expect(this.sendButton, "'Send' should be enabled once the message is composed").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.sendButton.click();
   }
@@ -113,8 +114,8 @@ class MessagesPage {
    */
   async openFirstMessage() {
     const outcome = await Promise.race([
-      this.messageRows.first().waitFor({ state: "visible", timeout: 30_000 }).then(() => "rows").catch(() => null),
-      this.errorLoading.first().waitFor({ state: "visible", timeout: 30_000 }).then(() => "error").catch(() => null),
+      this.messageRows.first().waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => "rows").catch(() => null),
+      this.errorLoading.first().waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => "error").catch(() => null),
     ]);
 
     if (outcome !== "rows") {
@@ -127,7 +128,7 @@ class MessagesPage {
 
     await this.messageRows.first().click();
     await expect(this.replyButton, "A 'Reply' action should be available on the opened message").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -141,7 +142,7 @@ class MessagesPage {
   /** ASSERTION: a message send/reply succeeded (after OTP confirmation). */
   async assertSent() {
     const done = this.page.getByText(/success|sent|submitted|message.*sent|thank you/i).first();
-    await expect(done, "A message-sent confirmation should be shown").toBeVisible({ timeout: 30_000 });
+    await expect(done, "A message-sent confirmation should be shown").toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 }
 

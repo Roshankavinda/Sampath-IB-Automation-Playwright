@@ -12,7 +12,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * agreement + OTP -> Confirm -> success.
  */
 test.describe("Web Card Opening - Positive", () => {
-  test("TC_WEBCARD_H01 - Apply for a web card", async ({ page }) => {
+  test("TC_WEBCARD_H01 - Verify that Apply for a web card", async ({ page }) => {
     const loginPage = new LoginPage(page);
     const dashboard = new DashboardPage(page);
     const web = new WebCardPage(page);

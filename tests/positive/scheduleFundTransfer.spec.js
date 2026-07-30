@@ -67,7 +67,7 @@ test.describe("Schedule Payment - Fund Transfer - Positive", () => {
   for (const flow of flows) {
     for (const sched of schedules) {
       const id = `TC_SCHED_FT_${flow.code}_${sched.seq}`;
-      test(`${id} - Schedule a ${sched.label} ${flow.label} transfer`, async ({ page, loggedInDashboard }) => {
+      test(`${id} - Verify that Schedule a ${sched.label} ${flow.label} transfer`, async ({ page, loggedInDashboard }) => {
         const data = { ...scheduledTransfer[flow.key].base, ...scheduledTransfer[sched.kind] };
         const schedule = new ScheduleModal(page);
         const popup = new ConfirmationPopup(page);

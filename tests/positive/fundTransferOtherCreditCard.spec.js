@@ -12,7 +12,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * One-time -> Submit -> OTP -> success.
  */
 test.describe("Fund Transfer - Other Bank Credit Card - Positive", () => {
-  test("TC_FT_OCC_H01 - Pay another bank's credit card (One-time)", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OCC_H01 - Verify that Pay another bank's credit card (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const cards = new OtherCreditCardsPage(page);
     const popup = new ConfirmationPopup(page);

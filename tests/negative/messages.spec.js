@@ -21,7 +21,7 @@ test.describe("Secure Messaging - Negative & Validation", () => {
     return messages;
   }
 
-  test("TC_MSG_N01 - Empty message cannot be sent", async ({ page, loggedInDashboard }) => {
+  test("TC_MSG_N01 - Verify that Empty message cannot be sent", async ({ page, loggedInDashboard }) => {
     const messages = await openCompose(page, loggedInDashboard);
     if (await messages.sendButton.isEnabled().catch(() => false)) {
       await messages.sendButton.click();
@@ -31,12 +31,12 @@ test.describe("Secure Messaging - Negative & Validation", () => {
     }
   });
 
-  test("TC_MSG_N02 - Subject dropdown displays selectable values", async ({ page, loggedInDashboard }) => {
+  test("TC_MSG_N02 - Verify that Subject dropdown displays selectable values", async ({ page, loggedInDashboard }) => {
     const messages = await openCompose(page, loggedInDashboard);
     await messages.assertSubjectPopulated();
   });
 
-  test("TC_MSG_N03 - Missing Subject is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_MSG_N03 - Verify that Missing Subject is blocked", async ({ page, loggedInDashboard }) => {
     const messages = await openCompose(page, loggedInDashboard);
     // A body only, no subject chosen.
     await messages.fillPartial({ body: neg.base.body });
@@ -48,7 +48,7 @@ test.describe("Secure Messaging - Negative & Validation", () => {
     }
   });
 
-  test("TC_MSG_N04 - Missing message body is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_MSG_N04 - Verify that Missing message body is blocked", async ({ page, loggedInDashboard }) => {
     const messages = await openCompose(page, loggedInDashboard);
     // Subject (+ sub-category) but no body.
     await messages.fillPartial({ subject: neg.base.subject, subCategory: neg.base.subCategory });

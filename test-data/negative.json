@@ -176,12 +176,20 @@
     }
   },
   "ownCardSettlement": {
+    "card": "1071",
     "zeroAmount": {
       "fromAccount": "1018 5010 4310",
       "card": "1071",
       "settlementType": "Custom Amount",
       "amount": "0",
       "expectedError": "custom amount must be greater than"
+    },
+    "negativeAmount": {
+      "fromAccount": "1018 5010 4310",
+      "card": "1071",
+      "settlementType": "Custom Amount",
+      "amount": "-100",
+      "expectedError": "greater than|valid|amount|invalid"
     }
   },
   "billPayment": {
@@ -194,6 +202,12 @@
       "reEnterValue": "0770000000",
       "amount": "500",
       "expectedError": "match|same|re-?enter|do not"
+    },
+    "emptyReference": {
+      "category": "Telephone",
+      "biller": "Dialog Mobile",
+      "fromAccount": "1018 5010 4310",
+      "expectedError": "required|reference|enter|number"
     }
   },
   "newPayee": {
@@ -227,6 +241,8 @@
     }
   },
   "savedPayeeTransfer": {
+    "payee": "Roshan Test",
+    "fromAccount": "1018 5010 4310",
     "zeroAmount": {
       "payee": "Roshan Test",
       "fromAccount": "1018 5010 4310",
@@ -234,14 +250,24 @@
       "purpose": "Wages & Salaries",
       "beneficiaryRemark": "PW Neg SavedPayee",
       "expectedError": "greater than|invalid|required"
-    }
+    },
+    "negativeAmount": { "amount": "-100", "expectedError": "greater than|valid|amount|invalid" },
+    "nonNumericAmount": { "amount": "abcd", "expectedError": "required|valid|amount|numeric" }
   },
   "savedBillerPayment": {
+    "biller": "PW Dialog Bill",
+    "fromAccount": "1018 5010 4310",
     "zeroAmount": {
       "biller": "PW Dialog Bill",
       "fromAccount": "1018 5010 4310",
       "amount": "0",
       "expectedError": "minimum|greater than|amount|valid|required"
+    },
+    "negativeAmount": {
+      "biller": "PW Dialog Bill",
+      "fromAccount": "1018 5010 4310",
+      "amount": "-100",
+      "expectedError": "greater than|valid|amount|invalid"
     }
   },
   "scheduledTransfer": {
@@ -276,7 +302,22 @@
       "account": "1018 5010 4310",
       "amount": "0",
       "expectedError": "minimum|greater than|amount|valid|required"
+    },
+    "negativeDeposit": {
+      "accountType": "Own Account",
+      "account": "1018 5010 4310",
+      "amount": "-100",
+      "expectedError": "greater than|valid|amount|invalid"
+    },
+    "nonNumericDeposit": {
+      "accountType": "Own Account",
+      "account": "1018 5010 4310",
+      "amount": "abcd",
+      "expectedError": "required|valid|amount|numeric"
     }
+  },
+  "forgotPassword": {
+    "invalidUsername": { "username": "bad user!!", "expectedError": "invalid|not valid|please enter valid username|not found" }
   },
   "message": {
     "base": { "subject": "Card Center Inquiry", "subCategory": "General Request", "body": "PW neg message" },

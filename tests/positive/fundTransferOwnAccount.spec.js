@@ -11,7 +11,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * Login -> Send Money -> Own Account -> fill -> One-time -> Submit -> OTP -> success.
  */
 test.describe("Fund Transfer - Own Account - Positive", () => {
-  test("TC_FT_OWN_H01 - Transfer between own accounts (One-time)", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_H01 - Verify that Transfer between own accounts (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const ownAccount = new OwnAccountPage(page);
     const popup = new ConfirmationPopup(page);

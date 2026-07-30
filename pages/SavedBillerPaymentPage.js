@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
@@ -35,8 +36,8 @@ class SavedBillerPaymentPage {
 
   /** ASSERTION: the Saved Billers page is displayed. */
   async assertLoaded() {
-    await expect(this.heading, "'Saved Billers' heading should be visible").toBeVisible({ timeout: 60_000 });
-    await expect(this.addNewBillerButton, "'Add New Biller' button should be visible").toBeVisible({ timeout: 60_000 });
+    await expect(this.heading, "'Saved Billers' heading should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
+    await expect(this.addNewBillerButton, "'Add New Biller' button should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
   }
 
   /**
@@ -52,8 +53,8 @@ class SavedBillerPaymentPage {
     // The list loads slowly, so race the biller against the app's own empty state rather
     // than checking the empty state up front (it has not rendered yet at that point).
     const outcome = await Promise.race([
-      biller.waitFor({ state: "visible", timeout: 30_000 }).then(() => "found").catch(() => null),
-      this.emptyState.waitFor({ state: "visible", timeout: 30_000 }).then(() => "empty").catch(() => null),
+      biller.waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => "found").catch(() => null),
+      this.emptyState.waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => "empty").catch(() => null),
     ]);
 
     if (outcome !== "found") {
@@ -72,7 +73,7 @@ class SavedBillerPaymentPage {
     await expect(
       this.fromAccountSelect,
       "The payment form (Pay From account) should open after picking a saved biller"
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /**
@@ -101,7 +102,7 @@ class SavedBillerPaymentPage {
 
   async submit() {
     await expect(this.nextButton, "Next should be enabled once the payment form is valid").toBeEnabled({
-      timeout: 20_000,
+      timeout: TIMEOUTS.ACTION,
     });
     await this.nextButton.click();
   }

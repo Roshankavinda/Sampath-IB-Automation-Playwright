@@ -1,6 +1,7 @@
 const { test } = require("../../utils/fixtures");
 const { ForgotPasswordPage } = require("../../pages/ForgotPasswordPage");
 const forgotPassword = require("../../test-data/forgotPassword");
+const negative = require("../../test-data/negative");
 const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
@@ -8,7 +9,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * Both cases go via the login "Reset" link -> "Using Security Questions" -> step 1.
  */
 test.describe("Forgot Password - Negative & Validation", () => {
-  test("TC_FPWD_N01 - Unknown username is rejected", async ({ page, loginPage }) => {
+  test("TC_FPWD_N01 - Verify that Unknown username is rejected", async ({ page, loginPage }) => {
     const fpwd = new ForgotPasswordPage(page);
 
     await test.step("Open Password Reset from the login page", async () => {
@@ -31,7 +32,7 @@ test.describe("Forgot Password - Negative & Validation", () => {
     });
   });
 
-  test("TC_FPWD_N02 - Empty username is blocked with a validation message", async ({ page, loginPage }) => {
+  test("TC_FPWD_N02 - Verify that Empty username is blocked with a validation message", async ({ page, loginPage }) => {
     const fpwd = new ForgotPasswordPage(page);
 
     await test.step("Open Password Reset from the login page", async () => {
@@ -51,6 +52,26 @@ test.describe("Forgot Password - Negative & Validation", () => {
 
     await test.step("Validate the app blocks it and stays on the username step", async () => {
       await fpwd.assertEmptyUsernameRejected();
+    });
+  });
+
+  test("TC_FPWD_N03 - Verify that Invalid-format username is rejected", async ({ page, loginPage }) => {
+    const fpwd = new ForgotPasswordPage(page);
+
+    await test.step("Open Password Reset and choose 'Using Security Questions'", async () => {
+      await loginPage.open();
+      await loginPage.assertLoaded();
+      await loginPage.goToForgotPassword();
+      await fpwd.assertLoaded();
+      await fpwd.selectSecurityQuestionsMethod();
+    });
+
+    await test.step("Enter an invalid-format username and submit", async () => {
+      await fpwd.requestReset({ username: negative.forgotPassword.invalidUsername.username });
+    });
+
+    await test.step("Validate the app rejects the invalid username", async () => {
+      await fpwd.assertRejected();
     });
   });
 

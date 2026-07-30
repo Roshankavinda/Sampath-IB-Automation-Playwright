@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { fillOtpBoxes, getToastText } = require("../utils/helpers");
 
 /**
@@ -94,12 +95,12 @@ class ConfirmationPopup {
     if (amount) {
       await expect
         .soft(this.page.getByText(new RegExp(amount.replace(".", "\\."))).first(), "Popup should display the amount")
-        .toBeVisible({ timeout: 10_000 });
+        .toBeVisible({ timeout: TIMEOUTS.QUICK });
     }
     if (beneficiaryName) {
       await expect
         .soft(this.page.getByText(new RegExp(beneficiaryName, "i")).first(), "Popup should display the beneficiary")
-        .toBeVisible({ timeout: 10_000 });
+        .toBeVisible({ timeout: TIMEOUTS.QUICK });
     }
   }
 
@@ -118,7 +119,7 @@ class ConfirmationPopup {
 
     await fillOtpBoxes(this.page, otp);
     await expect(this.confirmButton, "Confirm button should be enabled after entering OTP").toBeEnabled({
-      timeout: 10_000,
+      timeout: TIMEOUTS.QUICK,
     });
     await this.confirmButton.click();
   }
@@ -128,7 +129,7 @@ class ConfirmationPopup {
    * and Confirm is clicked. Completion is detected by the OTP popup closing.
    */
   async waitForManualOtp() {
-    const timeout = Number(process.env.IB_MANUAL_OTP_TIMEOUT || 180_000);
+    const timeout = TIMEOUTS.MANUAL_OTP;
     // eslint-disable-next-line no-console
     console.log(
       `\n>>> MANUAL OTP: enter the OTP sent to your phone in the browser and click Confirm ` +
@@ -163,7 +164,7 @@ class ConfirmationPopup {
       )
       .first();
     const ok = await success
-      .waitFor({ state: "visible", timeout: 30_000 })
+      .waitFor({ state: "visible", timeout: TIMEOUTS.LOAD })
       .then(() => true)
       .catch(() => false);
     if (ok) return;

@@ -12,7 +12,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * -> amount -> One-time -> Submit -> OTP -> success.
  */
 test.describe("Fund Transfer - Intra Bank (Sampath) - Positive", () => {
-  test("TC_FT_INTRA_H01 - Transfer to another Sampath account (One-time)", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_INTRA_H01 - Verify that Transfer to another Sampath account (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const intra = new OtherBankTransferPage(page);
     const popup = new ConfirmationPopup(page);

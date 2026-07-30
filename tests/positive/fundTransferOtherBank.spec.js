@@ -12,7 +12,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * amount -> purpose -> One-time -> Submit -> OTP -> success.
  */
 test.describe("Fund Transfer - Other Bank - Positive", () => {
-  test("TC_FT_OTHER_H01 - Transfer to another bank (One-time)", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_H01 - Verify that Transfer to another bank (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const otherBank = new OtherBankTransferPage(page);
     const popup = new ConfirmationPopup(page);

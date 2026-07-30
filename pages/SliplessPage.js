@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const {
   selectOptionByLabelContains,
   assertDropdownPopulated,
@@ -46,8 +47,8 @@ class SliplessPage {
 
   /** ASSERTION: the Slipless Banking page with its tabs is displayed. */
   async assertLoaded() {
-    await expect(this.heading, "'Slipless Banking' heading should be visible").toBeVisible({ timeout: 60_000 });
-    await expect(this.cashDepositTab, "'Cash Deposit' tab should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.heading, "'Slipless Banking' heading should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
+    await expect(this.cashDepositTab, "'Cash Deposit' tab should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await expect(this.cashWithdrawalTab, "'Cash Withdrawal' tab should be visible").toBeVisible();
   }
 
@@ -59,7 +60,7 @@ class SliplessPage {
     for (let attempt = 0; attempt < 3; attempt++) {
       await this.cashDepositTab.click().catch(() => {});
       const ok = await this.depositAccountSelect
-        .waitFor({ state: "visible", timeout: 20_000 })
+        .waitFor({ state: "visible", timeout: TIMEOUTS.ACTION })
         .then(() => true)
         .catch(() => false);
       if (ok) return;
@@ -87,7 +88,7 @@ class SliplessPage {
 
   async submitDeposit() {
     await expect(this.nextButton, "'Next' should be enabled once the deposit form is valid").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.nextButton.click();
   }
@@ -98,7 +99,7 @@ class SliplessPage {
     for (let attempt = 0; attempt < 3; attempt++) {
       await this.cashWithdrawalTab.click().catch(() => {});
       const ok = await this.withdrawalAccountSelect
-        .waitFor({ state: "visible", timeout: 20_000 })
+        .waitFor({ state: "visible", timeout: TIMEOUTS.ACTION })
         .then(() => true)
         .catch(() => false);
       if (ok) return;
@@ -121,7 +122,7 @@ class SliplessPage {
 
   async submitWithdrawal() {
     await expect(this.proceedButton, "'Proceed' should be enabled once the withdrawal form is valid").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.proceedButton.click();
   }
@@ -132,7 +133,7 @@ class SliplessPage {
       .getByText(/success|successful|slip.*generated|generated.*slip|reference|completed|receipt/i)
       .first();
     const ok = await success
-      .waitFor({ state: "visible", timeout: 30_000 })
+      .waitFor({ state: "visible", timeout: TIMEOUTS.LOAD })
       .then(() => true)
       .catch(() => false);
     if (!ok) {

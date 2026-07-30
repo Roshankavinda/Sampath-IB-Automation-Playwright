@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 
 /**
  * Self Services > Balance Confirmation.
@@ -35,10 +36,10 @@ class BalanceConfirmationPage {
   /** ASSERTION: the balance confirmation wizard (step 1) is displayed. */
   async assertLoaded() {
     await expect(this.heading, "'Requesting Balance Confirmations' heading should be visible").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
     await expect(this.confirmationTypeRadios.first(), "A confirmation-type option should be shown").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -50,14 +51,14 @@ class BalanceConfirmationPage {
     const option = /audit/i.test(type) ? this.auditOption : this.taxOption;
     await option.click();
     await expect(this.nextButton, "Next should enable once a confirmation type is chosen").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.nextButton.click();
   }
 
   /** ASSERTION: the date-range step is displayed. */
   async assertDateRangeStep() {
-    await expect(this.startDateInput, "Step 2: the Start Date field should be shown").toBeVisible({ timeout: 30_000 });
+    await expect(this.startDateInput, "Step 2: the Start Date field should be shown").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await expect(this.endDateInput, "Step 2: the End Date field should be shown").toBeVisible();
   }
 
@@ -80,7 +81,7 @@ class BalanceConfirmationPage {
   /** Advances from the date-range step to the account-selection step. */
   async continueToAccounts() {
     await expect(this.nextButton, "Next should be enabled once the date range is selected").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.nextButton.click();
   }
@@ -88,21 +89,21 @@ class BalanceConfirmationPage {
   /** ASSERTION: the account-selection step (a table of eligible accounts) is shown. */
   async assertAccountStep() {
     await expect(this.accountRows.first(), "The account-selection list should be shown").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
   /** Selects an eligible account (checking one enables Next), then continues. */
   async selectAccountAndContinue() {
     await this.accountCheckboxes.first().check({ force: true });
-    await expect(this.nextButton, "Next should enable once an account is selected").toBeEnabled({ timeout: 15_000 });
+    await expect(this.nextButton, "Next should enable once an account is selected").toBeEnabled({ timeout: TIMEOUTS.UI });
     await this.nextButton.click();
   }
 
   /** ASSERTION: the final confirmation step (a 'Confirm' button) is reached. */
   async assertConfirmationStep() {
     await expect(this.confirmButton, "The balance confirmation review step ('Confirm') should be reached").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -111,7 +112,7 @@ class BalanceConfirmationPage {
     if (await this.confirmButton.isEnabled().catch(() => false)) {
       await this.confirmButton.click();
       const done = this.page.getByText(/success|submitted|request.*received|generated|reference/i).first();
-      await expect(done, "A balance confirmation request confirmation should be shown").toBeVisible({ timeout: 30_000 });
+      await expect(done, "A balance confirmation request confirmation should be shown").toBeVisible({ timeout: TIMEOUTS.LOAD });
       return true;
     }
     return false;

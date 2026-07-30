@@ -1,4 +1,5 @@
 const { test } = require("../../utils/fixtures");
+const TIMEOUTS = require("../../config/timeouts");
 const { AddBillerPage } = require("../../pages/AddBillerPage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
 const { credentials } = require("../../test-data/accounts");
@@ -15,7 +16,7 @@ const { attachToastOnFailure, randomNickname } = require("../../utils/helpers");
  * by default (run headed). Set IB_MANUAL_OTP=false to auto-fill the bypass code.
  */
 test.describe("Add New Biller - Positive", () => {
-  test("TC_BILLER_H01 - Add a new Dialog biller", async ({ page, loggedInDashboard }) => {
+  test("TC_BILLER_H01 - Verify that Add a new Dialog biller", async ({ page, loggedInDashboard }) => {
     const biller = new AddBillerPage(page);
     // A unique template name per run so each run adds a distinct, identifiable record.
     const templateName = randomNickname("PW");
@@ -43,7 +44,7 @@ test.describe("Add New Biller - Positive", () => {
       const popup = new ConfirmationPopup(page);
       const otpRequested = await popup.otpBoxes
         .first()
-        .waitFor({ state: "visible", timeout: 20_000 })
+        .waitFor({ state: "visible", timeout: TIMEOUTS.ACTION })
         .then(() => true)
         .catch(() => false);
       if (otpRequested) {

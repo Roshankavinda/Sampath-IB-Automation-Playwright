@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
@@ -75,7 +76,7 @@ class FixedDepositPage {
   /** ASSERTION: step 1 (resident type) is displayed. */
   async assertLoaded() {
     await expect(this.residentTypeHeading, "FD step 1: the resident-type question should be shown").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
     await expect(this.residentRadios.first(), "FD step 1: resident-type options should be shown").toBeVisible();
   }
@@ -85,7 +86,7 @@ class FixedDepositPage {
     const index = /non/i.test(type) ? 1 : 0;
     await this.residentRadios.nth(index).check({ force: true });
     await expect(this.continueButton, "Continue should enable once a resident type is chosen").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.continueButton.click();
   }
@@ -96,13 +97,13 @@ class FixedDepositPage {
    * AFTER a tenure card is selected, so they are validated later (assertFormValidations).
    */
   async assertDetailsStepLoaded() {
-    await expect(this.nicknameInput, "FD step 2: the Nickname field should be shown").toBeVisible({ timeout: 60_000 });
+    await expect(this.nicknameInput, "FD step 2: the Nickname field should be shown").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
     await expect(this.productSelect, "FD step 2: the Fixed Deposit Product dropdown should be shown").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
     await expect
       .poll(async () => this.tenureCards.count().catch(() => 0), {
-        timeout: 60_000,
+        timeout: TIMEOUTS.SLOW_LOAD,
         message: "FD step 2: the tenure options should render",
       })
       .toBeGreaterThan(0);
@@ -138,7 +139,7 @@ class FixedDepositPage {
       .filter({ hasText: new RegExp(`^\\s*${data.tenure.replace(/\s+/g, "\\s*")}`, "i") })
       .first();
     await expect(card, `FD tenure "${data.tenure}" should be offered for this product`).toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await card.click();
 
@@ -147,10 +148,10 @@ class FixedDepositPage {
     await expect(
       this.interestModeSelect,
       "The interest payable mode should appear once a tenure is selected"
-    ).toBeVisible({ timeout: 20_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.ACTION });
     await expect
       .poll(async () => this.interestModeSelect.locator("option").count().catch(() => 0), {
-        timeout: 30_000,
+        timeout: TIMEOUTS.LOAD,
         message: "The interest payable mode options should load after the tenure card is clicked",
       })
       .toBeGreaterThan(1);
@@ -178,7 +179,7 @@ class FixedDepositPage {
     const digits = (s) => String(s).replace(/\D/g, "");
     await expect
       .poll(async () => digits(await this.amountInput.inputValue()), {
-        timeout: 15_000,
+        timeout: TIMEOUTS.UI,
         message: "Amount field should contain the entered amount",
       })
       .toContain(digits(data.amount));
@@ -190,7 +191,7 @@ class FixedDepositPage {
   /** Advances from step 2 to the review step. */
   async continueToReview() {
     await expect(this.continueButton, "Continue should be enabled once FD step 2 is valid").toBeEnabled({
-      timeout: 20_000,
+      timeout: TIMEOUTS.ACTION,
     });
     await this.continueButton.click();
   }
@@ -203,7 +204,7 @@ class FixedDepositPage {
   async assertMovedPastDetailsStep() {
     const moved = await expect
       .poll(async () => (await this.page.locator("body").innerText()).match(/Step\s*(\d)\s*of\s*4/i)?.[1] || "2", {
-        timeout: 30_000,
+        timeout: TIMEOUTS.LOAD,
       })
       .not.toBe("2")
       .then(() => true)
@@ -240,7 +241,7 @@ class FixedDepositPage {
     await expect(
       this.userAgreementText,
       "The FD review step should present a user agreement to accept. // VERIFY the wording if this fails on the right step."
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /**
@@ -294,7 +295,7 @@ class FixedDepositPage {
       ? this.confirmFdButton
       : this.continueButton.first();
     await expect(button, "The FD Submit/Confirm button should be enabled after accepting the agreement").toBeEnabled({
-      timeout: 20_000,
+      timeout: TIMEOUTS.ACTION,
     });
     await button.click();
   }
@@ -307,7 +308,7 @@ class FixedDepositPage {
     const ok = await this.page
       .getByText(/success|successful|created|opened|reference|thank you|step\s*4\s*of\s*4/i)
       .first()
-      .waitFor({ state: "visible", timeout: 30_000 })
+      .waitFor({ state: "visible", timeout: TIMEOUTS.LOAD })
       .then(() => true)
       .catch(() => false);
     if (!ok) {

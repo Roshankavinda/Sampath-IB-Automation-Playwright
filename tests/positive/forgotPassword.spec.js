@@ -17,7 +17,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * does NOT set a new password, so it never changes the real account credentials.
  */
 test.describe("Forgot Password - Positive", () => {
-  test("TC_FPWD_H01 - Valid username + OTP is accepted by the reset flow", async ({ page, loginPage }) => {
+  test("TC_FPWD_H01 - Verify that Valid username + OTP is accepted by the reset flow", async ({ page, loginPage }) => {
     const fpwd = new ForgotPasswordPage(page);
 
     await test.step("Open the login page and click the 'Reset' (Forgot Password) link", async () => {

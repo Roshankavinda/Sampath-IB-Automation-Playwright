@@ -17,7 +17,7 @@ test.describe("Bill Payment - Positive", () => {
   ];
 
   for (const { id, label, data } of cases) {
-    test(`${id} - Pay a ${label} bill by account`, async ({ page, loggedInDashboard }) => {
+    test(`${id} - Verify that Pay a ${label} bill by account`, async ({ page, loggedInDashboard }) => {
       const billPay = new BillPaymentPage(page);
       const popup = new ConfirmationPopup(page);
 

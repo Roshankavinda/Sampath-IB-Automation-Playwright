@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { getToastText, fillOtpBoxes } = require("../utils/helpers");
 
 /**
@@ -50,7 +51,7 @@ class ForgotPasswordPage {
 
   /** ASSERTION: the "Password Reset" method-selection screen is displayed. */
   async assertLoaded() {
-    await expect(this.heading, "'Password Reset' heading should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.heading, "'Password Reset' heading should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await expect(this.methodPrompt, "The reset-method prompt should be visible").toBeVisible();
     await expect(this.securityQuestionsMethod, "'Using Security Questions' method should be offered").toBeVisible();
     await expect(this.debitCardMethod, "'Using My Debit Card' method should be offered").toBeVisible();
@@ -64,7 +65,7 @@ class ForgotPasswordPage {
    */
   async selectSecurityQuestionsMethod() {
     await expect(this.securityQuestionsMethod, "'Using Security Questions' should be visible").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
 
     let opened = false;
@@ -89,7 +90,7 @@ class ForgotPasswordPage {
     // ASSERTION: username was entered.
     await expect(this.usernameInput, "Username should hold the entered value").toHaveValue(new RegExp(username));
 
-    await expect(this.nextButton, "'Next' should be enabled on the username step").toBeEnabled({ timeout: 15_000 });
+    await expect(this.nextButton, "'Next' should be enabled on the username step").toBeEnabled({ timeout: TIMEOUTS.UI });
     await this.nextButton.click();
   }
 
@@ -104,7 +105,7 @@ class ForgotPasswordPage {
     await expect(
       this.validationError,
       "An inline 'Please enter valid username' message should be shown for an empty username"
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.UI });
     // ASSERTION: the wizard does not advance.
     await expect(this.usernameInput, "The reset flow should stay on the username step").toBeVisible();
   }
@@ -114,7 +115,7 @@ class ForgotPasswordPage {
     await expect(
       this.otpBoxes.first(),
       "The reset flow should reach the OTP screen (a code is sent to your registered mobile/email)"
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /**
@@ -126,7 +127,7 @@ class ForgotPasswordPage {
    */
   async enterOtpManually(otp) {
     if (process.env.IB_MANUAL_OTP !== "false") {
-      const timeout = Number(process.env.IB_MANUAL_OTP_TIMEOUT || 180_000);
+      const timeout = TIMEOUTS.MANUAL_OTP;
       // eslint-disable-next-line no-console
       console.log(
         `\n>>> MANUAL RESET OTP: enter the OTP sent to your phone/email and continue in the browser ` +
@@ -149,7 +150,7 @@ class ForgotPasswordPage {
     // Unattended: fill the bypass code and continue.
     await fillOtpBoxes(this.page, otp);
     if (await this.verifyOtpButton.isVisible().catch(() => false)) await this.verifyOtpButton.click();
-    await this.otpBoxes.first().waitFor({ state: "hidden", timeout: 15_000 }).catch(() => {});
+    await this.otpBoxes.first().waitFor({ state: "hidden", timeout: TIMEOUTS.UI }).catch(() => {});
   }
 
   /**
@@ -160,7 +161,7 @@ class ForgotPasswordPage {
     await expect(
       this.page.getByText(/security question|answer|new password|set.*password|confirm password/i).first(),
       "The reset flow should advance past the OTP to the security-questions / new-password step"
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /** ASSERTION: the security-questions step is displayed (after the OTP). */
@@ -169,7 +170,7 @@ class ForgotPasswordPage {
     await expect(
       await this.visibleAnswerInput(),
       "The security-questions step (with an 'Enter here' answer box) should be shown after the OTP"
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /** Returns the currently VISIBLE answer box (the wizard pre-renders hidden copies). */
@@ -211,14 +212,14 @@ class ForgotPasswordPage {
       await expect(
         labelled.first(),
         "The wizard's Next button should enable after entering the answer"
-      ).toBeEnabled({ timeout: 15_000 });
+      ).toBeEnabled({ timeout: TIMEOUTS.UI });
       await labelled.first().click();
       return;
     }
     // Icon-only Next: the last form button that is not Cancel/Back.
     const next = this.page.getByRole("button").filter({ hasNotText: /cancel|back|logo/i }).last();
     await expect(next, "The wizard's Next button should enable after entering the answer").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await next.click();
   }
@@ -286,8 +287,8 @@ class ForgotPasswordPage {
     const passwordField = this.page.locator('input[type="password"]').first();
 
     const reached = await Promise.race([
-      byWording.waitFor({ state: "visible", timeout: 30_000 }).then(() => true).catch(() => false),
-      passwordField.waitFor({ state: "visible", timeout: 30_000 }).then(() => true).catch(() => false),
+      byWording.waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => true).catch(() => false),
+      passwordField.waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => true).catch(() => false),
     ]);
     if (!reached) {
       throw new Error(

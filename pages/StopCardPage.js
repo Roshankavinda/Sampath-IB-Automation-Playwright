@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 
 /**
  * Quick Actions > Stop Card - temporarily block a Credit / Debit / Web card.
@@ -54,7 +55,7 @@ class StopCardPage {
     for (let attempt = 1; attempt <= attempts; attempt++) {
       await dashboard.goToStopCard();
       const loaded = await this.heading
-        .waitFor({ state: "visible", timeout: 15_000 })
+        .waitFor({ state: "visible", timeout: TIMEOUTS.UI })
         .then(() => true)
         .catch(() => false);
       if (loaded) return;
@@ -67,9 +68,9 @@ class StopCardPage {
 
   /** ASSERTION: the Stop Card page is displayed with its card-type buttons. */
   async assertLoaded() {
-    await expect(this.heading, "Stop Card page subtitle should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.heading, "Stop Card page subtitle should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await expect(this.cardTypeButton("Credit"), "'Credit Card' type button should be visible").toBeVisible({
-      timeout: 20_000,
+      timeout: TIMEOUTS.ACTION,
     });
     await expect(this.cardTypeButton("Debit"), "'Debit Card' type button should be visible").toBeVisible();
     await expect(this.cardTypeButton("Web"), "'Web Card' type button should be visible").toBeVisible();
@@ -81,7 +82,7 @@ class StopCardPage {
    */
   async selectCardType(cardType = "Credit") {
     const btn = this.cardTypeButton(cardType);
-    await expect(btn, `'${cardType} Card' type button should be visible`).toBeVisible({ timeout: 20_000 });
+    await expect(btn, `'${cardType} Card' type button should be visible`).toBeVisible({ timeout: TIMEOUTS.ACTION });
     await btn.click();
     await this.waitForStoppableCard(cardType);
   }
@@ -122,12 +123,12 @@ class StopCardPage {
       if (await scoped.isVisible().catch(() => false)) target = scoped;
     }
 
-    await expect(target, "A card STOP button should be clickable").toBeVisible({ timeout: 15_000 });
+    await expect(target, "A card STOP button should be clickable").toBeVisible({ timeout: TIMEOUTS.UI });
     await target.click();
 
     // ASSERTION: the block-confirmation modal opened.
     await expect(this.blockModalText, "The 'block this card?' confirmation modal should open after STOP").toBeVisible({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
 
     // Capture which card is being stopped (from "…block your card ending ****1071…") so the
@@ -139,7 +140,7 @@ class StopCardPage {
 
   /** Confirms the temporary-block intent in the modal (this triggers the OTP step). */
   async confirmStop() {
-    await expect(this.confirmButton, "The modal's 'Confirm' button should be enabled").toBeEnabled({ timeout: 15_000 });
+    await expect(this.confirmButton, "The modal's 'Confirm' button should be enabled").toBeEnabled({ timeout: TIMEOUTS.UI });
     await this.confirmButton.click();
   }
 
@@ -155,7 +156,7 @@ class StopCardPage {
 
     // Wait for the list to come back after the OTP.
     await expect(this.heading, "The Stop Card list should reappear after confirming the block").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
 
     if (ending) {
@@ -167,7 +168,7 @@ class StopCardPage {
       await expect(
         inactiveCard,
         `The stopped card ending ${ending} should now show INACTIVE status`
-      ).toBeVisible({ timeout: 30_000 });
+      ).toBeVisible({ timeout: TIMEOUTS.LOAD });
 
       // And it should no longer offer a STOP action.
       const stillStoppable = this.page
@@ -176,7 +177,7 @@ class StopCardPage {
         .filter({ has: this.page.getByRole("button", { name: /stop hand|stop$/i }) });
       await expect(stillStoppable, `The stopped card ending ${ending} should no longer have a STOP button`).toHaveCount(
         0,
-        { timeout: 15_000 }
+        { timeout: TIMEOUTS.UI }
       );
       return;
     }
@@ -185,16 +186,34 @@ class StopCardPage {
     await expect(
       this.page.getByText(/INACTIVE/i).first(),
       "A card should now show INACTIVE status after being stopped"
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
+  }
+
+  /**
+   * ASSERTION: an INACTIVE card offers no STOP action. INACTIVE cards render without a STOP
+   * button, so no INACTIVE card container may contain one. Skips if there is no INACTIVE card.
+   */
+  async assertInactiveCardNotStoppable() {
+    const hasInactive = await this.page
+      .getByText(/INACTIVE/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (!hasInactive) return; // nothing to assert - every card of this type is active
+    const inactiveWithStop = this.page
+      .locator("div")
+      .filter({ hasText: /INACTIVE/i })
+      .filter({ has: this.page.getByRole("button", { name: /stop hand|stop$/i }) });
+    await expect(inactiveWithStop, "An INACTIVE card must not offer a STOP action").toHaveCount(0, { timeout: TIMEOUTS.UI });
   }
 
   /** Cancels the block via the modal's "Back" button (no card is blocked, no OTP). */
   async cancelStop() {
-    await expect(this.backButton, "The modal's 'Back' button should be available").toBeVisible({ timeout: 10_000 });
+    await expect(this.backButton, "The modal's 'Back' button should be available").toBeVisible({ timeout: TIMEOUTS.QUICK });
     await this.backButton.click();
     // ASSERTION: the modal closed without triggering an OTP.
     await expect(this.blockModalText, "The block-confirmation modal should close on Back").toBeHidden({
-      timeout: 10_000,
+      timeout: TIMEOUTS.QUICK,
     });
     await expect(
       this.page.locator("input.otp-box").first(),

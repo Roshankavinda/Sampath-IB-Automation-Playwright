@@ -6,12 +6,36 @@ const { attachToastOnFailure } = require("../../utils/helpers");
 
 /**
  * Feature: Own Card Settlement — NEGATIVE / VALIDATION.
- * A "Custom Amount" of zero must be rejected: the app raises the inline message
- * "Custom amount must be greater than 0.00" as soon as the amount is entered, and the
- * settlement must never reach the OTP step.
+ *   N01 zero "Custom Amount" is rejected inline and never reaches OTP
+ *   N02 the funding-account dropdown displays selectable values
+ *   N03 negative "Custom Amount" is not accepted
  */
 test.describe("Own Card Settlement - Negative & Validation", () => {
-  test("TC_OCS_N01 - Zero settlement amount is blocked", async ({ page, loggedInDashboard }) => {
+  const neg = negative.ownCardSettlement;
+
+  async function openSettle(page, loggedInDashboard) {
+    const settle = new OwnCardSettlementPage(page);
+    await loggedInDashboard.goToCreditCards();
+    await settle.assertLoaded();
+    await settle.selectCard(neg.card);
+    await settle.clickSettle();
+    return settle;
+  }
+
+  test("TC_OCS_N02 - Verify that Funding account dropdown displays selectable values", async ({ page, loggedInDashboard }) => {
+    const settle = await openSettle(page, loggedInDashboard);
+    await settle.assertFormValidations();
+  });
+
+  test("TC_OCS_N03 - Verify that Negative custom amount is not accepted", async ({ page, loggedInDashboard }) => {
+    const settle = await openSettle(page, loggedInDashboard);
+    await settle.fillSettlement(neg.negativeAmount);
+    const raw = await settle.customAmountInput.inputValue().catch(() => "");
+    expect(raw, "The custom amount must not retain a negative value").not.toContain("-");
+    await settle.assertAmountValidationShown(neg.negativeAmount.expectedError);
+  });
+
+  test("TC_OCS_N01 - Verify that Zero settlement amount is blocked", async ({ page, loggedInDashboard }) => {
     const settle = new OwnCardSettlementPage(page);
     const popup = new ConfirmationPopup(page);
     const data = negative.ownCardSettlement.zeroAmount;

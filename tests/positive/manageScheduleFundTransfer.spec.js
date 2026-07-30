@@ -21,7 +21,7 @@ test.describe("Manage Schedule - Fund Transfer - Positive", () => {
   ];
 
   for (const action of actions) {
-    test(`${action.id} - ${action.name} a scheduled fund transfer`, async ({ page, loggedInDashboard }) => {
+    test(`${action.id} - Verify that ${action.name} a scheduled fund transfer`, async ({ page, loggedInDashboard }) => {
       const manage = new ManageSchedulePage(page);
 
       await test.step("Open Manage Schedules > Scheduled Transfers", async () => {

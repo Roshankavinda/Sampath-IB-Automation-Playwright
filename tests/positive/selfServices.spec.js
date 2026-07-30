@@ -11,7 +11,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * reached by direct route (the Self Services menu items are no-op links in this build).
  */
 test.describe("Self Services - Positive", () => {
-  test("TC_SELF_H01 - Request a WHT/AIT tax certificate", async ({ page, loggedInDashboard }) => {
+  test("TC_SELF_H01 - Verify that Request a WHT/AIT tax certificate", async ({ page, loggedInDashboard }) => {
     const tax = new TaxCertificatePage(page);
 
     await test.step("Open Self Services > Request Tax Certificates", async () => {
@@ -41,7 +41,7 @@ test.describe("Self Services - Positive", () => {
     });
   });
 
-  test("TC_SELF_H02 - Request a Balance Confirmation", async ({ page, loggedInDashboard }) => {
+  test("TC_SELF_H02 - Verify that Request a Balance Confirmation", async ({ page, loggedInDashboard }) => {
     const balance = new BalanceConfirmationPage(page);
 
     await test.step("Open Self Services > Balance Confirmation", async () => {

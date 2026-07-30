@@ -10,7 +10,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * validate - each active card is stopped directly via its STOP button.)
  */
 test.describe("Stop Card - Negative & Validation", () => {
-  test("TC_STOPCARD_N01 - Cancelling the block modal does not stop the card", async ({ page, loggedInDashboard }) => {
+  test("TC_STOPCARD_N01 - Verify that Cancelling the block modal does not stop the card", async ({ page, loggedInDashboard }) => {
     const stop = new StopCardPage(page);
 
     await test.step("Navigate to Stop Card via Quick Actions", async () => {
@@ -25,6 +25,20 @@ test.describe("Stop Card - Negative & Validation", () => {
 
     await test.step("Cancel via 'Back' - the card must not be blocked and no OTP is shown", async () => {
       await stop.cancelStop();
+    });
+  });
+
+  test("TC_STOPCARD_N02 - Verify that An INACTIVE card offers no STOP action", async ({ page, loggedInDashboard }) => {
+    const stop = new StopCardPage(page);
+
+    await test.step("Navigate to Stop Card and choose the Credit card type", async () => {
+      await stop.openWithRetry(loggedInDashboard);
+      await stop.assertLoaded();
+      await stop.selectCardType(stopCard.credit.cardType);
+    });
+
+    await test.step("Any INACTIVE card must not have a STOP button", async () => {
+      await stop.assertInactiveCardNotStoppable();
     });
   });
 

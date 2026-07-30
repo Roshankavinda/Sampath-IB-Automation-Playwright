@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 
 /**
  * Send Money base page - shared by Own Account and Other Accounts flows.
@@ -24,7 +25,7 @@ class SendMoneyPage {
   /** ASSERTION: the Send Money page is displayed (by heading, not URL). */
   async assertLoaded() {
     await expect(this.heading, "'Make Transactions' heading should be visible on the Send Money page").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.subHeading, "Send Money sub-heading should be visible").toBeVisible();
   }
@@ -37,13 +38,13 @@ class SendMoneyPage {
    * actually shows up.
    */
   async selectOwnAccountTab() {
-    await expect(this.ownAccountTab, "'Own Account' tab should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.ownAccountTab, "'Own Account' tab should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     const fromAccount = this.page.locator('select[name="accountFrom"]');
 
     for (let attempt = 0; attempt < 4; attempt++) {
       await this.ownAccountTab.click().catch(() => {});
       const opened = await fromAccount
-        .waitFor({ state: "visible", timeout: 20_000 })
+        .waitFor({ state: "visible", timeout: TIMEOUTS.ACTION })
         .then(() => true)
         .catch(() => false);
       if (opened) return;
@@ -52,24 +53,24 @@ class SendMoneyPage {
   }
 
   async selectOtherAccountsTab() {
-    await expect(this.otherAccountsTab, "'Other Accounts' tab should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.otherAccountsTab, "'Other Accounts' tab should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await this.otherAccountsTab.click();
   }
 
   async selectOtherCreditCardsTab() {
     await expect(this.otherCreditCardsTab, "'Other Credit Cards' tab should be visible").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await this.otherCreditCardsTab.click();
   }
 
   async selectMobileCashTab() {
-    await expect(this.mobileCashTab, "'Mobile Cash' tab should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.mobileCashTab, "'Mobile Cash' tab should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await this.mobileCashTab.click();
   }
 
   async selectSavedPayeesTab() {
-    await expect(this.savedPayeesTab, "'Saved Payees' tab should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.savedPayeesTab, "'Saved Payees' tab should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await this.savedPayeesTab.click();
   }
 }

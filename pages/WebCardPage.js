@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { fillOtpBoxes } = require("../utils/helpers");
 
 /**
@@ -43,20 +44,20 @@ class WebCardPage {
    * so wait for it to become enabled before clicking.
    */
   async openApply() {
-    await expect(this.applyTile, "The 'Apply Web Card' tile should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.applyTile, "The 'Apply Web Card' tile should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await expect(
       this.applyTile,
       "The 'Apply Web Card' tile should become enabled (it is disabled while the dashboard loads). If it stays " +
         "disabled, the logged-in account is not eligible to open a web card."
-    ).toBeEnabled({ timeout: 30_000 });
+    ).toBeEnabled({ timeout: TIMEOUTS.LOAD });
     await this.applyTile.click();
-    await expect(this.heading, "The 'Web Card Apply' modal should open").toBeVisible({ timeout: 30_000 });
+    await expect(this.heading, "The 'Web Card Apply' modal should open").toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /** ASSERTION: step 1 (resident question) is shown, and Next is gated on it. */
   async assertResidentStep() {
     await expect(this.residentYes, "Step 1: the 'Sri Lankan Resident' option should be shown").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.nextButton, "Step 1: Next should be disabled until a resident type is chosen").toBeDisabled();
   }
@@ -65,7 +66,7 @@ class WebCardPage {
   async selectResidentAndContinue(type = "Resident") {
     const option = /non/i.test(type) ? this.residentNo : this.residentYes;
     await option.click();
-    await expect(this.nextButton, "Next should enable once a resident type is chosen").toBeEnabled({ timeout: 15_000 });
+    await expect(this.nextButton, "Next should enable once a resident type is chosen").toBeEnabled({ timeout: TIMEOUTS.UI });
     await this.nextButton.click();
   }
 
@@ -75,7 +76,7 @@ class WebCardPage {
    */
   async assertTermsStep() {
     await expect(this.termsText, "Step 2: the web card terms (annual fee) should be shown").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -93,7 +94,7 @@ class WebCardPage {
       )
       .catch(() => {});
     await expect(this.nextButton, "Step 2: Next should be enabled once the From Account list has loaded").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.nextButton.click();
   }
@@ -101,7 +102,7 @@ class WebCardPage {
   /** ASSERTION: step 3 (agreement + OTP) is reached. */
   async assertAgreementOtpStep() {
     await expect(this.otpBoxes.first(), "Step 3: the web card OTP boxes should be shown").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.agreementText, "Step 3: the agreement acceptance text should be shown").toBeVisible();
   }
@@ -142,7 +143,7 @@ class WebCardPage {
     await this.agreementCheckbox.click({ force: true }).catch(() => {});
     await fillOtpBoxes(this.modal, otp);
     await expect(this.confirmButton, "Confirm should enable after agreeing and entering the OTP").toBeEnabled({
-      timeout: 10_000,
+      timeout: TIMEOUTS.QUICK,
     });
     await this.confirmButton.click();
   }
@@ -150,7 +151,7 @@ class WebCardPage {
   /** ASSERTION: the web card application succeeded. */
   async assertSuccess() {
     const success = this.page.getByText(/success|successful|submitted|applied|request.*received|congratulation/i).first();
-    await expect(success, "A web card application success message should be shown").toBeVisible({ timeout: 30_000 });
+    await expect(success, "A web card application success message should be shown").toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 }
 

@@ -31,19 +31,19 @@ test.describe("Fund Transfer - Other Bank - Negative & Validation", () => {
     return otherBank;
   }
 
-  test("TC_FT_OTHER_N01 - Bank / account / purpose dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_N01 - Verify that Bank / account / purpose dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
     const otherBank = await openForm(page, loggedInDashboard);
     await otherBank.assertDropdownsPopulated();
   });
 
-  test("TC_FT_OTHER_N02 - Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_N02 - Verify that Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
     const otherBank = await openForm(page, loggedInDashboard);
     await otherBank.submitButton.click();
     await assertValidationError(page, "is required");
     await expect(otherBank.toAccountNumberInput, "The transfer form should stay open").toBeVisible();
   });
 
-  test("TC_FT_OTHER_N03 - Missing To Account Number is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_N03 - Verify that Missing To Account Number is blocked", async ({ page, loggedInDashboard }) => {
     const otherBank = await openForm(page, loggedInDashboard);
     await otherBank.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -56,7 +56,7 @@ test.describe("Fund Transfer - Other Bank - Negative & Validation", () => {
     await assertValidationError(page, neg.requiredFields.toAccount);
   });
 
-  test("TC_FT_OTHER_N04 - Missing Beneficiary Name is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_N04 - Verify that Missing Beneficiary Name is blocked", async ({ page, loggedInDashboard }) => {
     const otherBank = await openForm(page, loggedInDashboard);
     await otherBank.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -69,7 +69,7 @@ test.describe("Fund Transfer - Other Bank - Negative & Validation", () => {
     await assertValidationError(page, neg.requiredFields.beneficiaryName);
   });
 
-  test("TC_FT_OTHER_N05 - Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_N05 - Verify that Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
     const otherBank = await openForm(page, loggedInDashboard);
     await otherBank.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -82,7 +82,7 @@ test.describe("Fund Transfer - Other Bank - Negative & Validation", () => {
     await assertValidationError(page, neg.requiredFields.amount);
   });
 
-  test("TC_FT_OTHER_N06 - Zero amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_N06 - Verify that Zero amount is blocked", async ({ page, loggedInDashboard }) => {
     const otherBank = await openForm(page, loggedInDashboard);
     await otherBank.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -100,7 +100,7 @@ test.describe("Fund Transfer - Other Bank - Negative & Validation", () => {
     }
   });
 
-  test("TC_FT_OTHER_N07 - Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_N07 - Verify that Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
     const otherBank = await openForm(page, loggedInDashboard);
     await otherBank.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -113,7 +113,7 @@ test.describe("Fund Transfer - Other Bank - Negative & Validation", () => {
     await assertValidationError(page, neg.nonNumericAmount.expectedError);
   });
 
-  test("TC_FT_OTHER_N08 - Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_N08 - Verify that Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
     const otherBank = await openForm(page, loggedInDashboard);
     await otherBank.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -128,7 +128,7 @@ test.describe("Fund Transfer - Other Bank - Negative & Validation", () => {
     await assertValidationError(page, neg.negativeAmount.expectedError);
   });
 
-  test("TC_FT_OTHER_N09 - Transfer to an invalid account number is rejected", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OTHER_N09 - Verify that Transfer to an invalid account number is rejected", async ({ page, loggedInDashboard }) => {
     const popup = new ConfirmationPopup(page);
     const data = neg.invalidAccount;
     const otherBank = await openForm(page, loggedInDashboard);

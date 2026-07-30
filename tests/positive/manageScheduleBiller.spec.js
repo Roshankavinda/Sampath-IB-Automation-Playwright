@@ -21,7 +21,7 @@ test.describe("Manage Schedule - Biller - Positive", () => {
   ];
 
   for (const action of actions) {
-    test(`${action.id} - ${action.name} a scheduled bill payment`, async ({ page, loggedInDashboard }) => {
+    test(`${action.id} - Verify that ${action.name} a scheduled bill payment`, async ({ page, loggedInDashboard }) => {
       const manage = new ManageSchedulePage(page);
 
       await test.step("Open Manage Schedules > Scheduled Payments", async () => {

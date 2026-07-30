@@ -34,21 +34,21 @@ test.describe("Fund Transfer - Own Account - Negative & Validation", () => {
     return ownAccount;
   }
 
-  test("TC_FT_OWN_N01 - Account dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N01 - Verify that Account dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);
     // The From/To account dropdowns must load with real options - an empty (skeleton-only)
     // dropdown would make a transfer impossible.
     await ownAccount.assertAccountsPopulated();
   });
 
-  test("TC_FT_OWN_N02 - Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N02 - Verify that Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);
     // Submit is not disabled on this form - the app validates on click instead.
     await ownAccount.submitButton.click();
     await ownAccount.assertRequiredValidationShown();
   });
 
-  test("TC_FT_OWN_N03 - Missing To Account is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N03 - Verify that Missing To Account is blocked", async ({ page, loggedInDashboard }) => {
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);
     // Everything except the To Account.
     await ownAccount.fillPartial({
@@ -62,7 +62,7 @@ test.describe("Fund Transfer - Own Account - Negative & Validation", () => {
     await expect(ownAccount.toAccountSelect, "The form should stay open").toBeVisible();
   });
 
-  test("TC_FT_OWN_N04 - Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N04 - Verify that Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);
     await ownAccount.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -74,7 +74,7 @@ test.describe("Fund Transfer - Own Account - Negative & Validation", () => {
     await assertValidationError(page, neg.requiredFields.amount);
   });
 
-  test("TC_FT_OWN_N05 - Missing remarks are blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N05 - Verify that Missing remarks are blocked", async ({ page, loggedInDashboard }) => {
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);
     // Accounts + amount only; both remark fields left empty.
     await ownAccount.fillPartial({
@@ -86,7 +86,7 @@ test.describe("Fund Transfer - Own Account - Negative & Validation", () => {
     await assertValidationError(page, `${neg.requiredFields.senderRemark}|${neg.requiredFields.beneficiaryRemark}`);
   });
 
-  test("TC_FT_OWN_N06 - Zero amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N06 - Verify that Zero amount is blocked", async ({ page, loggedInDashboard }) => {
     const popup = new ConfirmationPopup(page);
     const data = neg.zeroAmount;
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);
@@ -102,7 +102,7 @@ test.describe("Fund Transfer - Own Account - Negative & Validation", () => {
     }
   });
 
-  test("TC_FT_OWN_N07 - Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N07 - Verify that Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
     const data = neg.nonNumericAmount;
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);
     await ownAccount.fillPartial({
@@ -125,7 +125,7 @@ test.describe("Fund Transfer - Own Account - Negative & Validation", () => {
     }
   });
 
-  test("TC_FT_OWN_N08 - Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N08 - Verify that Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
     const data = neg.negativeAmount;
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);
     await ownAccount.fillPartial({
@@ -144,7 +144,7 @@ test.describe("Fund Transfer - Own Account - Negative & Validation", () => {
     await assertValidationError(page, data.expectedError);
   });
 
-  test("TC_FT_OWN_N09 - Same From = To account is not allowed", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N09 - Verify that Same From = To account is not allowed", async ({ page, loggedInDashboard }) => {
     const data = neg.sameAccount;
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);
     const { fromVal, toVal, matched } = await ownAccount.trySameAccountBothSides(data.account);
@@ -163,7 +163,7 @@ test.describe("Fund Transfer - Own Account - Negative & Validation", () => {
     await assertValidationError(page, data.expectedError);
   });
 
-  test("TC_FT_OWN_N10 - Transfer above available balance is rejected", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OWN_N10 - Verify that Transfer above available balance is rejected", async ({ page, loggedInDashboard }) => {
     const popup = new ConfirmationPopup(page);
     const data = neg.insufficientFunds;
     const ownAccount = await openOwnAccountForm(page, loggedInDashboard);

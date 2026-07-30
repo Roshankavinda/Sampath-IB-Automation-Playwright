@@ -6,7 +6,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * Feature: Dashboard — NEGATIVE / VALIDATION (session & access guards).
  */
 test.describe("Dashboard - Negative & Validation", () => {
-  test("TC_DASH_N01 - Dashboard is not accessible without a valid session", async ({ page, loginPage }) => {
+  test("TC_DASH_N01 - Verify that Dashboard is not accessible without a valid session", async ({ page, loginPage }) => {
     const dashboard = new DashboardPage(page);
 
     await test.step("Open the app without logging in", async () => {
@@ -19,7 +19,7 @@ test.describe("Dashboard - Negative & Validation", () => {
     });
   });
 
-  test("TC_DASH_N02 - Logout ends the session and returns to login", async ({ page, loggedInDashboard, loginPage }) => {
+  test("TC_DASH_N02 - Verify that Logout ends the session and returns to login", async ({ page, loggedInDashboard, loginPage }) => {
     await test.step("Confirm the dashboard is loaded", async () => {
       await loggedInDashboard.assertLoaded();
     });

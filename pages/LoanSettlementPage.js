@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 
 /**
  * Loan Settlement — My Accounts > Loans -> "Settle Loan".
@@ -40,9 +41,9 @@ class LoanSettlementPage {
 
   /** ASSERTION: the Loans page with its action tiles is displayed. */
   async assertLoaded() {
-    await expect(this.heading, "'My Accounts / Loans' should be visible").toBeVisible({ timeout: 60_000 });
+    await expect(this.heading, "'My Accounts / Loans' should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
     await expect(this.settleLoanTile, "'Settle Loan' action should be visible on the Loans page").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -63,8 +64,8 @@ class LoanSettlementPage {
     // Race the loan list against the empty state, so "no loans" is reported clearly
     // instead of timing out on a click that can never do anything.
     const outcome = await Promise.race([
-      this.loanRows.first().waitFor({ state: "visible", timeout: 30_000 }).then(() => "rows").catch(() => null),
-      this.emptyState.first().waitFor({ state: "visible", timeout: 30_000 }).then(() => "empty").catch(() => null),
+      this.loanRows.first().waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => "rows").catch(() => null),
+      this.emptyState.first().waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => "empty").catch(() => null),
     ]);
 
     if (outcome !== "rows") {
@@ -79,7 +80,7 @@ class LoanSettlementPage {
 
     // ASSERTION: the settlement form opened. // VERIFY the real fields once a loan exists.
     const opened = await this.amountInput
-      .waitFor({ state: "visible", timeout: 30_000 })
+      .waitFor({ state: "visible", timeout: TIMEOUTS.LOAD })
       .then(() => true)
       .catch(() => false);
     if (!opened) {
@@ -105,7 +106,7 @@ class LoanSettlementPage {
 
   async submit() {
     await expect(this.submitButton, "Submit should be enabled once the settlement form is valid").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.submitButton.click();
   }

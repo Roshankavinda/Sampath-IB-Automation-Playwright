@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, toRegExp } = require("../utils/helpers");
 
 /**
@@ -33,10 +34,10 @@ class ScheduleModal {
   /** ASSERTION: the schedule detail modal is open. */
   async assertOpen() {
     await expect(this.modal, "The schedule detail modal should open after Submit in Standing Order mode").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.startDateInput, "Schedule: the Start Date field should be shown").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -77,7 +78,7 @@ class ScheduleModal {
 
   async submit() {
     await expect(this.submitButton, "The schedule 'Submit' button should be enabled once the form is valid").toBeEnabled(
-      { timeout: 15_000 }
+      { timeout: TIMEOUTS.UI }
     );
     await this.submitButton.click();
   }

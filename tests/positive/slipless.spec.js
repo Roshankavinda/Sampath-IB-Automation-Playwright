@@ -11,7 +11,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * SMS OTP -> Confirm -> slip generated.
  */
 test.describe("Slipless Banking - Positive", () => {
-  test("TC_SLIP_H01 - Slipless cash deposit", async ({ page, loggedInDashboard }) => {
+  test("TC_SLIP_H01 - Verify that Slipless cash deposit", async ({ page, loggedInDashboard }) => {
     const sless = new SliplessPage(page);
     const popup = new ConfirmationPopup(page);
 
@@ -43,7 +43,7 @@ test.describe("Slipless Banking - Positive", () => {
     });
   });
 
-  test("TC_SLIP_H02 - Slipless cash withdrawal", async ({ page, loggedInDashboard }) => {
+  test("TC_SLIP_H02 - Verify that Slipless cash withdrawal", async ({ page, loggedInDashboard }) => {
     const sless = new SliplessPage(page);
     const popup = new ConfirmationPopup(page);
 

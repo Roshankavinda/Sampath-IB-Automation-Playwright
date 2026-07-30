@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains, toRegExp } = require("../utils/helpers");
 
 /**
@@ -40,7 +41,7 @@ class OwnCardSettlementPage {
 
   /** ASSERTION: the Credit Cards page is displayed. */
   async assertLoaded() {
-    await expect(this.heading, "Credit Cards page should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.heading, "Credit Cards page should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /**
@@ -55,18 +56,18 @@ class OwnCardSettlementPage {
     await expect(
       card,
       `Credit card matching "${cardPartial}" should be visible - the logged-in account must hold this credit card`
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
     await card.click().catch(() => {});
   }
 
   async clickSettle() {
     await expect(this.settleButton, "'Settle' button should be visible in the Credit Card Details panel").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await this.settleButton.click();
     // The settlement modal must open.
     await expect(this.modalHeading, "'Make payments to this card' modal should open after Settle").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -99,7 +100,7 @@ class OwnCardSettlementPage {
    */
   async fillSettlement(data) {
     await expect(this.fundingAccountSelect, "Funding account dropdown should be visible in the Settle modal").toBeVisible(
-      { timeout: 30_000 }
+      { timeout: TIMEOUTS.LOAD }
     );
 
     if (data.fromAccount) {
@@ -111,13 +112,13 @@ class OwnCardSettlementPage {
     const type = data.settlementType || "Minimum Payment";
     const typeBox = this.modal.getByText(new RegExp(type.replace(/[*]/g, "").trim(), "i")).first();
     await expect(typeBox, `Payment type "${type}" should be selectable in the Settle modal`).toBeVisible({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await typeBox.click();
 
     if (/custom/i.test(type) && data.amount != null) {
       await expect(this.customAmountInput, "Custom Amount input should appear when 'Custom Amount' is chosen").toBeVisible(
-        { timeout: 15_000 }
+        { timeout: TIMEOUTS.UI }
       );
       await this.customAmountInput.fill(String(data.amount));
     }
@@ -128,7 +129,7 @@ class OwnCardSettlementPage {
 
   async submit() {
     await expect(this.submitButton, "'Next' should be enabled once the settlement form is valid").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.submitButton.click();
   }
@@ -146,7 +147,7 @@ class OwnCardSettlementPage {
     await expect(
       error,
       `An inline amount validation matching ${pattern} should be shown for an invalid settlement amount`
-    ).toBeVisible({ timeout: 20_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.ACTION });
 
     // ASSERTION: the settlement is not allowed to proceed - the modal stays open.
     await expect(this.modalHeading, "The Settle modal should stay open when the amount is invalid").toBeVisible();

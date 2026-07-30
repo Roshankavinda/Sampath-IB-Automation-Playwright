@@ -28,19 +28,19 @@ test.describe("Fund Transfer - Intra Bank (Sampath) - Negative & Validation", ()
     return intra;
   }
 
-  test("TC_FT_INTRA_N01 - Bank / account / purpose dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_INTRA_N01 - Verify that Bank / account / purpose dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
     const intra = await openForm(page, loggedInDashboard);
     await intra.assertDropdownsPopulated();
   });
 
-  test("TC_FT_INTRA_N02 - Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_INTRA_N02 - Verify that Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
     const intra = await openForm(page, loggedInDashboard);
     await intra.submitButton.click();
     await assertValidationError(page, "is required");
     await expect(intra.toAccountNumberInput, "The transfer form should stay open").toBeVisible();
   });
 
-  test("TC_FT_INTRA_N03 - Missing To Account Number is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_INTRA_N03 - Verify that Missing To Account Number is blocked", async ({ page, loggedInDashboard }) => {
     const intra = await openForm(page, loggedInDashboard);
     await intra.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -53,7 +53,7 @@ test.describe("Fund Transfer - Intra Bank (Sampath) - Negative & Validation", ()
     await assertValidationError(page, neg.requiredFields.toAccount);
   });
 
-  test("TC_FT_INTRA_N04 - Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_INTRA_N04 - Verify that Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
     const intra = await openForm(page, loggedInDashboard);
     await intra.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -66,7 +66,7 @@ test.describe("Fund Transfer - Intra Bank (Sampath) - Negative & Validation", ()
     await assertValidationError(page, neg.requiredFields.amount);
   });
 
-  test("TC_FT_INTRA_N05 - Zero amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_INTRA_N05 - Verify that Zero amount is blocked", async ({ page, loggedInDashboard }) => {
     const intra = await openForm(page, loggedInDashboard);
     await intra.fillPartial({ fromAccount: neg.base.fromAccount, bank: neg.base.bank, amount: neg.zeroAmount.amount });
     const enabled = await intra.submitButton.isEnabled().catch(() => false);
@@ -78,14 +78,14 @@ test.describe("Fund Transfer - Intra Bank (Sampath) - Negative & Validation", ()
     }
   });
 
-  test("TC_FT_INTRA_N06 - Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_INTRA_N06 - Verify that Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
     const intra = await openForm(page, loggedInDashboard);
     await intra.fillPartial({ fromAccount: neg.base.fromAccount, bank: neg.base.bank, amount: neg.nonNumericAmount.amount });
     await intra.submitButton.click();
     await assertValidationError(page, neg.nonNumericAmount.expectedError);
   });
 
-  test("TC_FT_INTRA_N07 - Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_INTRA_N07 - Verify that Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
     const intra = await openForm(page, loggedInDashboard);
     await intra.fillPartial({ fromAccount: neg.base.fromAccount, bank: neg.base.bank, amount: neg.negativeAmount.amount });
     const raw = await intra.amountInput.inputValue().catch(() => "");
@@ -94,7 +94,7 @@ test.describe("Fund Transfer - Intra Bank (Sampath) - Negative & Validation", ()
     await assertValidationError(page, neg.negativeAmount.expectedError);
   });
 
-  test("TC_FT_INTRA_N08 - Invalid Sampath account number is rejected", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_INTRA_N08 - Verify that Invalid Sampath account number is rejected", async ({ page, loggedInDashboard }) => {
     const intra = await openForm(page, loggedInDashboard);
     const data = neg.invalidAccount;
     await intra.selectFromAccount(data.fromAccount);

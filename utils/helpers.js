@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 
 /**
  * Fill the 6-digit OTP boxes (input.otp-box) inside the given scope.
@@ -8,7 +9,7 @@ const { expect } = require("@playwright/test");
  */
 async function fillOtpBoxes(scope, otp) {
   const boxes = scope.locator("input.otp-box");
-  await expect(boxes.first(), "OTP input boxes should be visible").toBeVisible({ timeout: 15_000 });
+  await expect(boxes.first(), "OTP input boxes should be visible").toBeVisible({ timeout: TIMEOUTS.UI });
   const count = await boxes.count();
   const digits = otp.split("");
   for (let i = 0; i < Math.min(count, digits.length); i++) {
@@ -26,7 +27,7 @@ async function selectOptionByLabelContains(select, partialLabel) {
   await expect(select, `Dropdown should be visible before selecting "${partialLabel}"`).toBeVisible();
   await expect
     .poll(async () => (await select.locator("option").allTextContents()).length, {
-      timeout: 20_000,
+      timeout: TIMEOUTS.ACTION,
       message: "Dropdown options did not load",
     })
     .toBeGreaterThan(0);
@@ -54,7 +55,7 @@ async function selectOptionByLabelContains(select, partialLabel) {
 async function selectFirstRealOption(select) {
   await expect
     .poll(async () => (await select.locator("option").allTextContents()).length, {
-      timeout: 20_000,
+      timeout: TIMEOUTS.ACTION,
       message: "Dropdown options did not load",
     })
     .toBeGreaterThan(1);
@@ -128,7 +129,7 @@ async function selectTransferMode(radios, modeLabel) {
  * @param {string} value  date string, e.g. "2026-12-31"
  */
 async function fillDateField(input, value) {
-  await expect(input, "Date field should be visible").toBeVisible({ timeout: 15_000 });
+  await expect(input, "Date field should be visible").toBeVisible({ timeout: TIMEOUTS.UI });
   await input.fill(value).catch(async () => {
     // Some pickers block fill(); type it instead.
     await input.click();

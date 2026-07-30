@@ -11,7 +11,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * Pay From / Amount -> Next -> OTP -> success.
  */
 test.describe("Bill Payment by Saved Biller - Positive", () => {
-  test("TC_SBILLER_H01 - Pay a saved biller", async ({ page, loggedInDashboard }) => {
+  test("TC_SBILLER_H01 - Verify that Pay a saved biller", async ({ page, loggedInDashboard }) => {
     const savedBiller = new SavedBillerPaymentPage(page);
     const popup = new ConfirmationPopup(page);
 

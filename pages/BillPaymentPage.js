@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
@@ -42,7 +43,7 @@ class BillPaymentPage {
   /** ASSERTION: the Bill Payment "New Payment" page with All Categories is displayed. */
   async assertLoaded() {
     await expect(this.allCategoriesHeading, "'All Categories' section should be visible on Bill Payment").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
   }
 
@@ -51,7 +52,7 @@ class BillPaymentPage {
    * slowly, so this confirms values are shown, not just that the section rendered).
    */
   async assertCategoriesDisplayed() {
-    await this.categoryTiles.first().waitFor({ state: "visible", timeout: 90_000 }).catch(() => {});
+    await this.categoryTiles.first().waitFor({ state: "visible", timeout: TIMEOUTS.VERY_SLOW }).catch(() => {});
     const count = await this.categoryTiles.count().catch(() => 0);
     expect.soft(count, "The Bill Payment category tiles should be displayed").toBeGreaterThan(0);
   }
@@ -82,11 +83,11 @@ class BillPaymentPage {
       this.categoryTiles.first(),
       "The Bill Payment category tiles never rendered - the category list is served slowly and intermittently " +
         "fails to load. This is an environment/backend issue, not a locator problem."
-    ).toBeVisible({ timeout: 90_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.VERY_SLOW });
 
     const tile = this.categoryTiles.filter({ hasText: categoryName }).first();
     await expect(tile, `Category "${categoryName}" should be visible under All Categories`).toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
     await tile.click();
   }
@@ -99,12 +100,12 @@ class BillPaymentPage {
    */
   async selectBiller(billerName) {
     const tile = this.billerTiles.filter({ hasText: billerName }).first();
-    await expect(tile, `Biller "${billerName}" should be visible in the category`).toBeVisible({ timeout: 90_000 });
+    await expect(tile, `Biller "${billerName}" should be visible in the category`).toBeVisible({ timeout: TIMEOUTS.VERY_SLOW });
     await tile.click();
 
     // ASSERTION: the payment form loaded after choosing the biller.
     await expect(this.fromAccountSelect, "Bill payment form: From Account dropdown should be visible").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
   }
 
@@ -122,7 +123,7 @@ class BillPaymentPage {
   /** Fills the biller's reference field and its "Re Enter" twin with the same value. */
   async fillReferenceField(fieldName, value) {
     await expect(this.referenceInput, `Reference field "${fieldName}" should be visible`).toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await this.referenceInput.fill(value);
 
@@ -140,7 +141,7 @@ class BillPaymentPage {
    */
   async fillMismatchedReference(fieldName, value, reEnterValue) {
     await expect(this.referenceInput, `Reference field "${fieldName}" should be visible`).toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await this.referenceInput.fill(value);
     if ((await this.reEnterInput.count()) > 0) {
@@ -177,13 +178,13 @@ class BillPaymentPage {
     await expect(
       this.page.locator('input[name="transferMode"][value="SCHEDULE"]'),
       "Standing Order/Schedule mode should be selected"
-    ).toBeChecked({ timeout: 10_000 });
+    ).toBeChecked({ timeout: TIMEOUTS.QUICK });
   }
 
   /** Clicks "Next" to submit the payment form and move to the confirmation/OTP step. */
   async proceed() {
     await expect(this.nextButton, "Next button should be enabled once the form is valid").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.nextButton.click();
   }

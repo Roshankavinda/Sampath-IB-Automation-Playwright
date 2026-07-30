@@ -8,7 +8,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * Valid credentials -> (OTP bypassed in UAT) -> dashboard.
  */
 test.describe("Login - Positive", () => {
-  test("TC_LOGIN_H01 - Valid username & password lands on the dashboard", async ({ page, loginPage }) => {
+  test("TC_LOGIN_H01 - Verify that Valid username & password lands on the dashboard", async ({ page, loginPage }) => {
     const dashboard = new DashboardPage(page);
 
     await test.step("Open the login page and validate it is displayed", async () => {

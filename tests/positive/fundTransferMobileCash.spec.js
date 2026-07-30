@@ -12,7 +12,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * One-time -> Submit -> OTP -> success.
  */
 test.describe("Fund Transfer - Mobile Cash - Positive", () => {
-  test("TC_FT_MCASH_H01 - Send Mobile Cash to a mobile number (One-time)", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_MCASH_H01 - Verify that Send Mobile Cash to a mobile number (One-time)", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const mobile = new MobileCashPage(page);
     const popup = new ConfirmationPopup(page);

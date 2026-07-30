@@ -11,7 +11,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * is chosen.
  */
 test.describe("Web Card Opening - Negative & Validation", () => {
-  test("TC_WEBCARD_N01 - Next stays disabled until a resident type is chosen", async ({ page }) => {
+  test("TC_WEBCARD_N01 - Verify that Next stays disabled until a resident type is chosen", async ({ page }) => {
     const loginPage = new LoginPage(page);
     const dashboard = new DashboardPage(page);
     const web = new WebCardPage(page);

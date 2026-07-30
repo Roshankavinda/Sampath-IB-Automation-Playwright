@@ -12,7 +12,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * active loan is used.
  */
 test.describe("Loan Settlement - Positive", () => {
-  test("TC_LOAN_H01 - Settle a loan", async ({ page, loggedInDashboard }) => {
+  test("TC_LOAN_H01 - Verify that Settle a loan", async ({ page, loggedInDashboard }) => {
     const loan = new LoanSettlementPage(page);
 
     await test.step("Navigate to My Accounts > Loans", async () => {

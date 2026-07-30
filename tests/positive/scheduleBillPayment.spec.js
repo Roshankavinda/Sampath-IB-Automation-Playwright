@@ -19,7 +19,7 @@ test.describe("Schedule Payment - Bill Payment - Positive", () => {
   ];
 
   for (const { id, label, data } of cases) {
-    test(`${id} - Schedule a ${label} Dialog bill payment`, async ({ page, loggedInDashboard }) => {
+    test(`${id} - Verify that Schedule a ${label} Dialog bill payment`, async ({ page, loggedInDashboard }) => {
       const billPay = new BillPaymentPage(page);
       const schedule = new ScheduleModal(page);
       const popup = new ConfirmationPopup(page);

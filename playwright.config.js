@@ -1,6 +1,7 @@
 // @ts-check
 const { defineConfig, devices } = require("@playwright/test");
 require("dotenv").config();
+const TIMEOUTS = require("./config/timeouts");
 
 /**
  * Sampath Vishwa Retail Web - Playwright configuration.
@@ -20,8 +21,8 @@ module.exports = defineConfig({
   testDir: "./tests",
   testMatch: isRegression ? "**/regression.spec.js" : "**/*.spec.js",
   testIgnore: isRegression ? undefined : "**/regression.spec.js",
-  timeout: 120_000,
-  expect: { timeout: 15_000 },
+  timeout: TIMEOUTS.TEST,
+  expect: { timeout: TIMEOUTS.EXPECT },
 
   fullyParallel: false,
   workers: 1, // single session against the stateful banking environment
@@ -42,8 +43,8 @@ module.exports = defineConfig({
     headless: false, // GUI by default; CI can override with --headless
     viewport: { width: 1440, height: 900 },
     ignoreHTTPSErrors: true,
-    actionTimeout: 20_000,
-    navigationTimeout: 45_000,
+    actionTimeout: TIMEOUTS.ACTION,
+    navigationTimeout: TIMEOUTS.NAV,
 
     // Evidence for the final report
     screenshot: "only-on-failure",

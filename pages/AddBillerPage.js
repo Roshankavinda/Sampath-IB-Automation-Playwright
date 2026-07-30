@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const {
   selectOptionByLabelContains,
   getToastText,
@@ -55,8 +56,8 @@ class AddBillerPage {
 
   /** ASSERTION: the Saved Billers page is displayed. */
   async assertSavedBillersLoaded() {
-    await expect(this.savedBillersHeading, "'Saved Billers' heading should be visible").toBeVisible({ timeout: 60_000 });
-    await expect(this.addNewBillerButton, "'Add New Biller' button should be visible").toBeVisible({ timeout: 60_000 });
+    await expect(this.savedBillersHeading, "'Saved Billers' heading should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
+    await expect(this.addNewBillerButton, "'Add New Biller' button should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
   }
 
   /**
@@ -80,10 +81,10 @@ class AddBillerPage {
 
   /** ASSERTION: the Add Biller form is displayed. */
   async assertFormLoaded() {
-    await expect(this.modalHeading, "'Add Biller' modal heading should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.modalHeading, "'Add Biller' modal heading should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await expect(this.modalSubHeading, "Add Biller sub-heading should be visible").toBeVisible();
     await expect(this.categorySelect, "Add Biller: Category dropdown should be visible").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.billerSelect, "Add Biller: Biller dropdown should be visible").toBeVisible();
     await expect(this.templateNameInput, "Add Biller: Template Name field should be visible").toBeVisible();
@@ -111,7 +112,7 @@ class AddBillerPage {
     // The biller options arrive asynchronously once the category is set.
     await expect
       .poll(async () => (await this.billerSelect.locator("option").allTextContents()).length, {
-        timeout: 60_000,
+        timeout: TIMEOUTS.SLOW_LOAD,
         message: `The biller list for category "${category}" did not load`,
       })
       .toBeGreaterThan(1);
@@ -133,7 +134,7 @@ class AddBillerPage {
       await expect(
         this.referenceInput,
         "Add Biller: the biller's reference field should appear once a biller is selected"
-      ).toBeVisible({ timeout: 30_000 });
+      ).toBeVisible({ timeout: TIMEOUTS.LOAD });
       await this.referenceInput.fill(data.referenceValue);
     }
 
@@ -159,11 +160,11 @@ class AddBillerPage {
    * the background so a rejection can still be reported precisely by assertBillerSaved().
    */
   async submit() {
-    await expect(this.nextButton, "'Next' should be visible on the Add Biller form").toBeVisible({ timeout: 15_000 });
+    await expect(this.nextButton, "'Next' should be visible on the Add Biller form").toBeVisible({ timeout: TIMEOUTS.UI });
     this.lastSaveResponse = "";
     this.page
       .waitForResponse((r) => r.request().method() === "POST" && !/google-analytics/.test(r.url()), {
-        timeout: 60_000,
+        timeout: TIMEOUTS.SLOW_LOAD,
       })
       .then(async (r) => {
         this.lastSaveResponse = await r.text().catch(() => "");
@@ -177,7 +178,7 @@ class AddBillerPage {
     await expect(
       this.requiredError,
       "An inline 'is required' validation message should be shown when the Add Biller form is empty"
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.UI });
     // ASSERTION: the form does not advance.
     await expect(this.categorySelect, "The Add Biller form should stay open").toBeVisible();
   }
@@ -215,7 +216,7 @@ class AddBillerPage {
     await expect(
       record,
       `The newly added biller "${templateName}" should appear as a record in the Saved Billers list`
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /** Collects the visible headings (and any toast) for diagnostics. */

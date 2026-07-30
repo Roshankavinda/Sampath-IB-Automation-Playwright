@@ -11,7 +11,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * amount / remarks -> One-time -> Submit -> OTP -> success.
  */
 test.describe("Fund Transfer by Saved Payee - Positive", () => {
-  test("TC_SPAYEE_H01 - Transfer to a saved payee", async ({ page, loggedInDashboard }) => {
+  test("TC_SPAYEE_H01 - Verify that Transfer to a saved payee", async ({ page, loggedInDashboard }) => {
     const savedPayee = new SavedPayeeTransferPage(page);
     const popup = new ConfirmationPopup(page);
 

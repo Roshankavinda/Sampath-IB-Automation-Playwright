@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 
 /**
  * Dashboard Page.
@@ -47,7 +48,7 @@ class DashboardPage {
   /** ASSERTION: the dashboard/top navigation is loaded after login. */
   async assertLoaded() {
     await expect(this.dashboardNav, "Dashboard navigation should be visible after login").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
     await expect(this.quickActions, "Quick Actions should be visible on the dashboard").toBeVisible();
   }
@@ -88,7 +89,7 @@ class DashboardPage {
   async assertQuickActionItems(items) {
     for (const name of items) {
       const item = this.page.getByText(name, { exact: true }).last();
-      await expect.soft(item, `Quick Action "${name}" should be visible`).toBeVisible({ timeout: 30_000 });
+      await expect.soft(item, `Quick Action "${name}" should be visible`).toBeVisible({ timeout: TIMEOUTS.LOAD });
     }
   }
 
@@ -126,7 +127,7 @@ class DashboardPage {
     await this.waitForNavReady();
     await triggerLocator.click();
     const item = this.page.locator('a[class*="subMenuItem"]').filter({ hasText: itemName }).first();
-    await expect(item, `"${itemName}" should be visible in the nav dropdown`).toBeVisible({ timeout: 30_000 });
+    await expect(item, `"${itemName}" should be visible in the nav dropdown`).toBeVisible({ timeout: TIMEOUTS.LOAD });
     await item.click();
     // The dropdown closes itself shortly after navigation; move the pointer clear of
     // the panel and wait for it to close so it doesn't overlay the destination page.
@@ -134,7 +135,7 @@ class DashboardPage {
     await this.page
       .locator('[class*="subMenuContainer"]')
       .first()
-      .waitFor({ state: "hidden", timeout: 10_000 })
+      .waitFor({ state: "hidden", timeout: TIMEOUTS.QUICK })
       .catch(() => {});
   }
 
@@ -162,7 +163,7 @@ class DashboardPage {
     await this.waitForNavReady();
     const tile = this.page.getByRole("button", { name: /Fixed Deposit/i }).first();
     await expect(tile, "'Open New Fixed Deposit' tile should be visible on the dashboard").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
     await tile.click();
   }
@@ -212,14 +213,14 @@ class DashboardPage {
   async goToSlipless() {
     await this.waitForNavReady();
     const tile = this.page.getByRole("button", { name: /slipless/i }).first();
-    await expect(tile, "'Sampath Slipless' tile should be visible on the dashboard").toBeVisible({ timeout: 60_000 });
+    await expect(tile, "'Sampath Slipless' tile should be visible on the dashboard").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
     await tile.click();
   }
 
   /** Top-nav "Manage Schedules" -> the Schedule Management page (/dashboard/manage-schedule). */
   async goToManageSchedules() {
     await this.waitForNavReady();
-    await expect(this.manageSchedulesNav, "'Manage Schedules' nav should be visible").toBeVisible({ timeout: 60_000 });
+    await expect(this.manageSchedulesNav, "'Manage Schedules' nav should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
     await this.manageSchedulesNav.click();
   }
 
@@ -227,7 +228,7 @@ class DashboardPage {
   async openTopNav(itemName) {
     await this.waitForNavReady();
     const item = this.page.getByText(itemName, { exact: true }).first();
-    await expect(item, `Top-nav item "${itemName}" should be visible`).toBeVisible({ timeout: 60_000 });
+    await expect(item, `Top-nav item "${itemName}" should be visible`).toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
     await item.click();
   }
 
@@ -243,18 +244,18 @@ class DashboardPage {
   async logout() {
     await this.waitForNavReady();
     await expect(this.profileMenuTrigger, "The user menu (avatar) should be visible in the nav bar").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await this.profileMenuTrigger.hover();
 
     await expect(this.logoutButton, "Logout should appear in the user menu when the avatar is hovered").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await this.logoutButton.click();
 
     // ASSERTION: the logout confirmation prompt is shown, then confirm it.
     await expect(this.logoutConfirmPrompt, "A logout confirmation prompt should be shown").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.confirmLogoutButton, "'Confirm & Logout' should be available").toBeVisible();
     await this.confirmLogoutButton.click();

@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
@@ -31,7 +32,7 @@ class MobileCashPage {
   /** ASSERTION: the Mobile Cash form is displayed. */
   async assertLoaded() {
     await expect(this.mobileNumberInput, "Mobile Cash form: Receiver's Mobile Number field should be visible").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.nicInput, "Mobile Cash form: Receiver's NIC field should be visible").toBeVisible();
     // The From Account control loads asynchronously (skeleton loader). Give it a
@@ -40,7 +41,7 @@ class MobileCashPage {
       .waitForFunction(() => {
         const f = document.querySelector("form");
         return f && !f.querySelector(".animate-pulse");
-      }, null, { timeout: 15_000 })
+      }, null, { timeout: TIMEOUTS.UI })
       .catch(() => {});
   }
 
@@ -51,7 +52,7 @@ class MobileCashPage {
    */
   async assertFormStillOpen() {
     const onForm = await this.nicInput
-      .waitFor({ state: "visible", timeout: 10_000 })
+      .waitFor({ state: "visible", timeout: TIMEOUTS.QUICK })
       .then(() => true)
       .catch(() => false);
     if (!onForm) {
@@ -116,7 +117,7 @@ class MobileCashPage {
       }
     }
     await expect(this.submitButton, "Submit button should be enabled once the form is valid").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.submitButton.click();
   }

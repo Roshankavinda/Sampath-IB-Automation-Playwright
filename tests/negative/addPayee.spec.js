@@ -24,18 +24,18 @@ test.describe("Add New Payee - Negative & Validation", () => {
     return payee;
   }
 
-  test("TC_PAYEE_N01 - Type / Bank dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
+  test("TC_PAYEE_N01 - Verify that Type / Bank dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
     const payee = await openForm(page, loggedInDashboard);
     await payee.assertFormValidations();
   });
 
-  test("TC_PAYEE_N02 - Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
+  test("TC_PAYEE_N02 - Verify that Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
     const payee = await openForm(page, loggedInDashboard);
     await payee.nextButton.click();
     await payee.assertRequiredValidationShown();
   });
 
-  test("TC_PAYEE_N03 - Missing Nickname is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_PAYEE_N03 - Verify that Missing Nickname is blocked", async ({ page, loggedInDashboard }) => {
     const payee = await openForm(page, loggedInDashboard);
     await payee.fillPartial({
       type: neg.base.type,
@@ -47,7 +47,7 @@ test.describe("Add New Payee - Negative & Validation", () => {
     await assertValidationError(page, neg.requiredFields.nickName);
   });
 
-  test("TC_PAYEE_N04 - Missing Account Number is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_PAYEE_N04 - Verify that Missing Account Number is blocked", async ({ page, loggedInDashboard }) => {
     const payee = await openForm(page, loggedInDashboard);
     await payee.fillPartial({
       type: neg.base.type,
@@ -59,7 +59,7 @@ test.describe("Add New Payee - Negative & Validation", () => {
     await assertValidationError(page, neg.requiredFields.accountNumber);
   });
 
-  test("TC_PAYEE_N05 - Missing Account Holder's Name is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_PAYEE_N05 - Verify that Missing Account Holder's Name is blocked", async ({ page, loggedInDashboard }) => {
     const payee = await openForm(page, loggedInDashboard);
     await payee.fillPartial({
       type: neg.base.type,

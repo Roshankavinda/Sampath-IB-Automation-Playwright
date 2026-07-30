@@ -13,7 +13,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * -> Submit -> (OTP if requested) -> success.
  */
 test.describe("FD Create - Positive", () => {
-  test("TC_FD_H01 - Open a new Fixed Deposit", async ({ page, loggedInDashboard }) => {
+  test("TC_FD_H01 - Verify that Open a new Fixed Deposit", async ({ page, loggedInDashboard }) => {
     const fd = new FixedDepositPage(page);
 
     await test.step("Open 'Open New Fixed Deposit' from the dashboard", async () => {

@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 
 /**
  * Manage Schedules — Schedule Management page (top-nav "Manage Schedules",
@@ -30,9 +31,9 @@ class ManageSchedulePage {
 
   /** ASSERTION: the Schedule Management page with both tabs is displayed. */
   async assertLoaded() {
-    await expect(this.heading, "'Schedule Management' heading should be visible").toBeVisible({ timeout: 60_000 });
+    await expect(this.heading, "'Schedule Management' heading should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
     await expect(this.scheduledTransfersTab, "'Scheduled Transfers' tab should be visible").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.scheduledPaymentsTab, "'Scheduled Payments' tab should be visible").toBeVisible();
   }
@@ -52,8 +53,8 @@ class ManageSchedulePage {
    */
   async selectSchedule(identifier) {
     const outcome = await Promise.race([
-      this.rows.first().waitFor({ state: "visible", timeout: 30_000 }).then(() => "rows").catch(() => null),
-      this.emptyState.first().waitFor({ state: "visible", timeout: 30_000 }).then(() => "empty").catch(() => null),
+      this.rows.first().waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => "rows").catch(() => null),
+      this.emptyState.first().waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => "empty").catch(() => null),
     ]);
 
     if (outcome !== "rows") {
@@ -66,7 +67,7 @@ class ManageSchedulePage {
 
     const row = identifier ? this.rows.filter({ hasText: identifier }).first() : this.rows.first();
     await expect(row, `A schedule row matching "${identifier || "(first)"}" should be listed`).toBeVisible({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     return row;
   }
@@ -94,7 +95,7 @@ class ManageSchedulePage {
     }
 
     await expect(control, `The "${actionName}" action should be available on the schedule row`).toBeVisible({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await control.click();
   }

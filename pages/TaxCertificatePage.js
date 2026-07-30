@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 
 /**
  * Self Services > Request Tax Certificates (WHT/AIT).
@@ -31,10 +32,10 @@ class TaxCertificatePage {
   /** ASSERTION: the tax certificate wizard (step 1) is displayed. */
   async assertLoaded() {
     await expect(this.heading, "'Requesting Withholding Tax (WHT) Certificates' heading should be visible").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
     await expect(this.certificateTypeRadios.first(), "A certificate-type option should be shown").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -42,38 +43,38 @@ class TaxCertificatePage {
   async selectCertificateTypeAndContinue() {
     await this.whtOption.click();
     await expect(this.nextButton, "Next should enable once a certificate type is chosen").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.nextButton.click();
   }
 
   /** Step 2: the date range is pre-filled; just continue. */
   async assertDateRangeStep() {
-    await expect(this.startDateInput, "Step 2: the Start date field should be shown").toBeVisible({ timeout: 30_000 });
+    await expect(this.startDateInput, "Step 2: the Start date field should be shown").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await expect(this.endDateInput, "Step 2: the End date field should be shown").toBeVisible();
   }
 
   async continueDateRange() {
-    await expect(this.nextButton, "Next should be enabled on the date-range step").toBeEnabled({ timeout: 15_000 });
+    await expect(this.nextButton, "Next should be enabled on the date-range step").toBeEnabled({ timeout: TIMEOUTS.UI });
     await this.nextButton.click();
   }
 
   /** Step 3: select an account (by its number, no spaces) via its row checkbox. */
   async assertAccountStep() {
-    await expect(this.accountRows.first(), "Step 3: the account list should be shown").toBeVisible({ timeout: 30_000 });
+    await expect(this.accountRows.first(), "Step 3: the account list should be shown").toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   async selectAccount(accountNumber) {
     const row = this.accountRows.filter({ hasText: accountNumber }).first();
     await expect(row, `Account "${accountNumber}" should be listed for the tax certificate`).toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await row.locator('input[type="checkbox"]').first().check({ force: true });
   }
 
   /** Advances from the account step to the final confirmation ("place a request") step. */
   async reachConfirmation() {
-    await expect(this.nextButton, "Next should be enabled once an account is selected").toBeEnabled({ timeout: 15_000 });
+    await expect(this.nextButton, "Next should be enabled once an account is selected").toBeEnabled({ timeout: TIMEOUTS.UI });
     await this.nextButton.click();
   }
 
@@ -84,7 +85,7 @@ class TaxCertificatePage {
    */
   async assertConfirmationStep() {
     await expect(this.confirmationPrompt, "The WHT/AIT certificate confirmation prompt should be shown").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.confirmButton, "A 'Confirm' button should be shown on the review step").toBeVisible();
   }
@@ -94,7 +95,7 @@ class TaxCertificatePage {
     if (await this.confirmButton.isEnabled().catch(() => false)) {
       await this.confirmButton.click();
       const done = this.page.getByText(/success|submitted|request.*received|generated|reference/i).first();
-      await expect(done, "A tax certificate request confirmation should be shown").toBeVisible({ timeout: 30_000 });
+      await expect(done, "A tax certificate request confirmation should be shown").toBeVisible({ timeout: TIMEOUTS.LOAD });
       return true;
     }
     return false; // Confirm disabled - typically no WHT/AIT deduction for the account/period.

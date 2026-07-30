@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
@@ -30,7 +31,7 @@ class OtherBankTransferPage {
   async assertLoaded() {
     // Bank + To Account load reliably; the From Account loads asynchronously (skeleton).
     await expect(this.bankSelect, "Other Accounts form: Bank dropdown should be visible").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.toAccountNumberInput, "Other Accounts form: To Account Number field should be visible").toBeVisible();
     // Give the From Account skeleton loader a chance to resolve (non-fatal).
@@ -38,7 +39,7 @@ class OtherBankTransferPage {
       .waitForFunction(() => {
         const f = document.querySelector("form");
         return f && !f.querySelector(".animate-pulse");
-      }, null, { timeout: 30_000 })
+      }, null, { timeout: TIMEOUTS.LOAD })
       .catch(() => {});
   }
 
@@ -65,7 +66,7 @@ class OtherBankTransferPage {
    */
   async selectFromAccount(partial) {
     const ready = await this.fromAccountSelect
-      .waitFor({ state: "visible", timeout: 30_000 })
+      .waitFor({ state: "visible", timeout: TIMEOUTS.LOAD })
       .then(() => true)
       .catch(() => false);
     if (ready) {
@@ -89,7 +90,7 @@ class OtherBankTransferPage {
     await this.toAccountNumberInput.click();
     await this.toAccountNumberInput.fill(accountNumber);
     await expect(this.beneficiaryNameInput, "Beneficiary name field should be editable").toBeEditable({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.beneficiaryNameInput.fill(beneficiaryName);
     // ASSERTION: beneficiary name reflects the entered value.
@@ -174,13 +175,13 @@ class OtherBankTransferPage {
   async selectStandingOrderSchedule() {
     await this.standingOrderLabel.click();
     await expect(this.transferModeSchedule, "Standing Order/Schedule mode should be selected").toBeChecked({
-      timeout: 10_000,
+      timeout: TIMEOUTS.QUICK,
     });
   }
 
   async submit() {
     await expect(this.submitButton, "Submit button should be enabled once the form is valid").toBeEnabled({
-      timeout: 15_000,
+      timeout: TIMEOUTS.UI,
     });
     await this.submitButton.click();
   }

@@ -16,7 +16,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * (defaults to "USD" - change it to your actual foreign-currency account if needed).
  */
 test.describe("Own Card Settlement - Positive", () => {
-  test("TC_OCS_H01 - Settle own credit card", async ({ page, loggedInDashboard }) => {
+  test("TC_OCS_H01 - Verify that Settle own credit card", async ({ page, loggedInDashboard }) => {
     const settle = new OwnCardSettlementPage(page);
     const popup = new ConfirmationPopup(page);
 
@@ -49,7 +49,7 @@ test.describe("Own Card Settlement - Positive", () => {
     });
   });
 
-  test("TC_OCS_H02 - Settle own credit card by foreign currency account", async ({ page, loggedInDashboard }) => {
+  test("TC_OCS_H02 - Verify that Settle own credit card by foreign currency account", async ({ page, loggedInDashboard }) => {
     const settle = new OwnCardSettlementPage(page);
     const popup = new ConfirmationPopup(page);
     const fcy = ownCardSettlement.foreignCurrency;

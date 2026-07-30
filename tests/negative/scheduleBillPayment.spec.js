@@ -10,7 +10,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * not reach the OTP step.
  */
 test.describe("Schedule Payment - Bill Payment - Negative & Validation", () => {
-  test("TC_SCHED_BILL_N01 - Schedule with no frequency is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_SCHED_BILL_N01 - Verify that Schedule with no frequency is blocked", async ({ page, loggedInDashboard }) => {
     const billPay = new BillPaymentPage(page);
     const schedule = new ScheduleModal(page);
     const data = negative.scheduledBillPayment.noFrequency;

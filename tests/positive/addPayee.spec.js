@@ -1,4 +1,5 @@
 const { test } = require("../../utils/fixtures");
+const TIMEOUTS = require("../../config/timeouts");
 const { AddPayeePage } = require("../../pages/AddPayeePage");
 const { ConfirmationPopup } = require("../../pages/ConfirmationPopup");
 const { credentials } = require("../../test-data/accounts");
@@ -14,7 +15,7 @@ const { attachToastOnFailure, randomNickname } = require("../../utils/helpers");
  * by default (run headed). Set IB_MANUAL_OTP=false to auto-fill the bypass code.
  */
 test.describe("Add New Payee - Positive", () => {
-  test("TC_PAYEE_H01 - Add a new other-bank payee", async ({ page, loggedInDashboard }) => {
+  test("TC_PAYEE_H01 - Verify that Add a new other-bank payee", async ({ page, loggedInDashboard }) => {
     const payee = new AddPayeePage(page);
     // A unique nickname per run so each run adds a distinct, identifiable record.
     const nickName = randomNickname("PW");
@@ -38,7 +39,7 @@ test.describe("Add New Payee - Positive", () => {
       const popup = new ConfirmationPopup(page);
       const otpRequested = await popup.otpBoxes
         .first()
-        .waitFor({ state: "visible", timeout: 20_000 })
+        .waitFor({ state: "visible", timeout: TIMEOUTS.ACTION })
         .then(() => true)
         .catch(() => false);
       if (otpRequested) {

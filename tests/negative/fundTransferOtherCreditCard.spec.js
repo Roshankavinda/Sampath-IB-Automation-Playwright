@@ -30,19 +30,19 @@ test.describe("Fund Transfer - Other Bank Credit Card - Negative & Validation", 
     return cards;
   }
 
-  test("TC_FT_OCC_N01 - Bank / account dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OCC_N01 - Verify that Bank / account dropdowns display selectable values", async ({ page, loggedInDashboard }) => {
     const cards = await openForm(page, loggedInDashboard);
     await cards.assertDropdownsPopulated();
   });
 
-  test("TC_FT_OCC_N02 - Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OCC_N02 - Verify that Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
     const cards = await openForm(page, loggedInDashboard);
     await cards.submitButton.click();
     await assertValidationError(page, "is required");
     await expect(cards.cardNumberInput, "The form should stay open").toBeVisible();
   });
 
-  test("TC_FT_OCC_N03 - Mismatched Card Number / Re-enter is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OCC_N03 - Verify that Mismatched Card Number / Re-enter is blocked", async ({ page, loggedInDashboard }) => {
     const cards = await openForm(page, loggedInDashboard);
     await cards.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -56,7 +56,7 @@ test.describe("Fund Transfer - Other Bank Credit Card - Negative & Validation", 
     await assertValidationError(page, neg.mismatchedCard.expectedError);
   });
 
-  test("TC_FT_OCC_N04 - Invalid (too-short) card number is rejected", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OCC_N04 - Verify that Invalid (too-short) card number is rejected", async ({ page, loggedInDashboard }) => {
     const popup = new ConfirmationPopup(page);
     const data = neg.invalidCard;
     const cards = await openForm(page, loggedInDashboard);
@@ -74,7 +74,7 @@ test.describe("Fund Transfer - Other Bank Credit Card - Negative & Validation", 
     }
   });
 
-  test("TC_FT_OCC_N05 - Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OCC_N05 - Verify that Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
     const cards = await openForm(page, loggedInDashboard);
     await cards.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -87,7 +87,7 @@ test.describe("Fund Transfer - Other Bank Credit Card - Negative & Validation", 
     await assertValidationError(page, neg.requiredFields.amount);
   });
 
-  test("TC_FT_OCC_N06 - Zero amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OCC_N06 - Verify that Zero amount is blocked", async ({ page, loggedInDashboard }) => {
     const cards = await openForm(page, loggedInDashboard);
     await cards.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -106,7 +106,7 @@ test.describe("Fund Transfer - Other Bank Credit Card - Negative & Validation", 
     }
   });
 
-  test("TC_FT_OCC_N07 - Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OCC_N07 - Verify that Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
     const cards = await openForm(page, loggedInDashboard);
     await cards.fillPartial({
       fromAccount: neg.base.fromAccount,
@@ -120,7 +120,7 @@ test.describe("Fund Transfer - Other Bank Credit Card - Negative & Validation", 
     await assertValidationError(page, neg.nonNumericAmount.expectedError);
   });
 
-  test("TC_FT_OCC_N08 - Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_OCC_N08 - Verify that Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
     const cards = await openForm(page, loggedInDashboard);
     await cards.fillPartial({
       fromAccount: neg.base.fromAccount,

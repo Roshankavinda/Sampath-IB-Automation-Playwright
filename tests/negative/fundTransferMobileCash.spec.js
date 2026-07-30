@@ -30,19 +30,19 @@ test.describe("Fund Transfer - Mobile Cash - Negative & Validation", () => {
     return mobile;
   }
 
-  test("TC_FT_MCASH_N01 - Purpose dropdown displays selectable values", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_MCASH_N01 - Verify that Purpose dropdown displays selectable values", async ({ page, loggedInDashboard }) => {
     const mobile = await openForm(page, loggedInDashboard);
     await mobile.assertPurposePopulated();
   });
 
-  test("TC_FT_MCASH_N02 - Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_MCASH_N02 - Verify that Empty form is blocked with required-field errors", async ({ page, loggedInDashboard }) => {
     const mobile = await openForm(page, loggedInDashboard);
     await mobile.submitButton.click();
     await assertValidationError(page, "is required");
     await expect(mobile.mobileNumberInput, "The Mobile Cash form should stay open").toBeVisible();
   });
 
-  test("TC_FT_MCASH_N03 - Mismatched Mobile / Re-enter number is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_MCASH_N03 - Verify that Mismatched Mobile / Re-enter number is blocked", async ({ page, loggedInDashboard }) => {
     const mobile = await openForm(page, loggedInDashboard);
     await mobile.fillPartial({
       nic: neg.base.nic,
@@ -56,7 +56,7 @@ test.describe("Fund Transfer - Mobile Cash - Negative & Validation", () => {
     await assertValidationError(page, neg.mismatchedMobile.expectedError);
   });
 
-  test("TC_FT_MCASH_N04 - Invalid (too-short) mobile number is rejected", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_MCASH_N04 - Verify that Invalid (too-short) mobile number is rejected", async ({ page, loggedInDashboard }) => {
     const popup = new ConfirmationPopup(page);
     const data = neg.invalidMobile;
     const mobile = await openForm(page, loggedInDashboard);
@@ -71,7 +71,7 @@ test.describe("Fund Transfer - Mobile Cash - Negative & Validation", () => {
     }
   });
 
-  test("TC_FT_MCASH_N05 - Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_MCASH_N05 - Verify that Missing Amount is blocked", async ({ page, loggedInDashboard }) => {
     const mobile = await openForm(page, loggedInDashboard);
     await mobile.fillPartial({
       nic: neg.base.nic,
@@ -84,7 +84,7 @@ test.describe("Fund Transfer - Mobile Cash - Negative & Validation", () => {
     await assertValidationError(page, neg.requiredFields.amount);
   });
 
-  test("TC_FT_MCASH_N06 - Zero amount is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_MCASH_N06 - Verify that Zero amount is blocked", async ({ page, loggedInDashboard }) => {
     const mobile = await openForm(page, loggedInDashboard);
     await mobile.fillPartial({
       nic: neg.base.nic,
@@ -103,7 +103,7 @@ test.describe("Fund Transfer - Mobile Cash - Negative & Validation", () => {
     }
   });
 
-  test("TC_FT_MCASH_N07 - Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_MCASH_N07 - Verify that Non-numeric amount is not accepted", async ({ page, loggedInDashboard }) => {
     const mobile = await openForm(page, loggedInDashboard);
     await mobile.fillPartial({
       nic: neg.base.nic,
@@ -117,7 +117,7 @@ test.describe("Fund Transfer - Mobile Cash - Negative & Validation", () => {
     await assertValidationError(page, neg.nonNumericAmount.expectedError);
   });
 
-  test("TC_FT_MCASH_N08 - Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
+  test("TC_FT_MCASH_N08 - Verify that Negative amount is not accepted", async ({ page, loggedInDashboard }) => {
     const mobile = await openForm(page, loggedInDashboard);
     await mobile.fillPartial({
       nic: neg.base.nic,

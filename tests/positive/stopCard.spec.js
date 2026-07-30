@@ -25,7 +25,7 @@ test.describe("Stop Card - Positive", () => {
   ];
 
   for (const { id, label, data, profile } of cases) {
-    test(`${id} - Stop a ${label} card`, async ({ page }) => {
+    test(`${id} - Verify that Stop a ${label} card`, async ({ page }) => {
       const loginPage = new LoginPage(page);
       const dashboard = new DashboardPage(page);
       const stop = new StopCardPage(page);

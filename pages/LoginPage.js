@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { fillOtpBoxes } = require("../utils/helpers");
 
 /**
@@ -35,7 +36,7 @@ class LoginPage {
   /** ASSERTION: the login page is displayed. */
   async assertLoaded() {
     await expect(this.usernameInput, "Username field should be visible on the login page").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
     await expect(this.passwordInput, "Password field should be visible on the login page").toBeVisible();
     await expect(this.loginButton, "Login button should be visible").toBeVisible();
@@ -67,7 +68,7 @@ class LoginPage {
   async handleOtpIfPresent(otp) {
     const otpShown = await this.otpBoxes
       .first()
-      .waitFor({ state: "visible", timeout: 30_000 })
+      .waitFor({ state: "visible", timeout: TIMEOUTS.LOAD })
       .then(() => true)
       .catch(() => false);
     if (!otpShown) return; // no OTP challenge this time - straight to the dashboard
@@ -76,12 +77,12 @@ class LoginPage {
     await fillOtpBoxes(this.page, otp);
     const confirm = this.page.getByRole("button", { name: /^confirm$/i }).last();
     await expect(confirm, "Login OTP: Confirm should enable once the 6-digit bypass code is entered").toBeEnabled({
-      timeout: 10_000,
+      timeout: TIMEOUTS.QUICK,
     });
     await confirm.click();
 
     // Let the OTP screen clear as login proceeds (assertLoaded confirms the dashboard).
-    await this.otpBoxes.first().waitFor({ state: "hidden", timeout: 15_000 }).catch(() => {});
+    await this.otpBoxes.first().waitFor({ state: "hidden", timeout: TIMEOUTS.UI }).catch(() => {});
   }
 
   /** Full valid-login flow (used by every end-to-end test). */
@@ -96,7 +97,7 @@ class LoginPage {
   /** Opens the Forgot Password ("Reset") flow from the login screen. */
   async goToForgotPassword() {
     await expect(this.forgotPasswordLink, "'Reset' (Forgot Password) link should be visible on the login page").toBeVisible(
-      { timeout: 30_000 }
+      { timeout: TIMEOUTS.LOAD }
     );
     await this.forgotPasswordLink.click();
   }
@@ -109,7 +110,7 @@ class LoginPage {
    */
   async assertLoginFailed() {
     await expect(this.errorToast, "A 'LOGIN FAILED' message should be displayed for invalid credentials").toBeVisible({
-      timeout: 60_000,
+      timeout: TIMEOUTS.SLOW_LOAD,
     });
     await expect(this.usernameInput, "User should remain on the login page").toBeVisible();
   }

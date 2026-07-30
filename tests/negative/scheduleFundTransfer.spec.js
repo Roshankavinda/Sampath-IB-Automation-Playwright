@@ -11,7 +11,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * not reach the OTP step.
  */
 test.describe("Schedule Payment - Fund Transfer - Negative & Validation", () => {
-  test("TC_SCHED_FT_N01 - Schedule with no frequency is blocked", async ({ page, loggedInDashboard }) => {
+  test("TC_SCHED_FT_N01 - Verify that Schedule with no frequency is blocked", async ({ page, loggedInDashboard }) => {
     const sendMoney = new SendMoneyPage(page);
     const ownAccount = new OwnAccountPage(page);
     const schedule = new ScheduleModal(page);

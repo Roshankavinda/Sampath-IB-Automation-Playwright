@@ -11,7 +11,7 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * Confirm -> sent. Reply opens an existing message and responds.
  */
 test.describe("Secure Messaging - Positive", () => {
-  test("TC_MSG_H01 - Send a message to the bank", async ({ page, loggedInDashboard }) => {
+  test("TC_MSG_H01 - Verify that Send a message to the bank", async ({ page, loggedInDashboard }) => {
     const messages = new MessagesPage(page);
     const popup = new ConfirmationPopup(page);
 
@@ -43,7 +43,7 @@ test.describe("Secure Messaging - Positive", () => {
     });
   });
 
-  test("TC_MSG_H02 - Reply to a message", async ({ page, loggedInDashboard }) => {
+  test("TC_MSG_H02 - Verify that Reply to a message", async ({ page, loggedInDashboard }) => {
     const messages = new MessagesPage(page);
     const popup = new ConfirmationPopup(page);
 

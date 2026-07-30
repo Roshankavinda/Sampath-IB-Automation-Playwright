@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const {
   selectOptionByLabelContains,
   getToastText,
@@ -55,9 +56,9 @@ class AddPayeePage {
 
   /** ASSERTION: the Saved Payees page is displayed. */
   async assertSavedPayeesLoaded() {
-    await expect(this.savedPayeesHeading, "'Saved Payees' heading should be visible").toBeVisible({ timeout: 60_000 });
+    await expect(this.savedPayeesHeading, "'Saved Payees' heading should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
     await expect(this.filtersPrompt, "The Saved Payees filter prompt should be visible").toBeVisible();
-    await expect(this.addNewPayeeButton, "'Add New Payee' button should be visible").toBeVisible({ timeout: 60_000 });
+    await expect(this.addNewPayeeButton, "'Add New Payee' button should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
   }
 
   /**
@@ -85,7 +86,7 @@ class AddPayeePage {
    * ~12s first), so it gets a generous wait of its own.
    */
   async assertFormLoaded() {
-    await expect(this.modalHeading, "'Add New Payee' modal heading should be visible").toBeVisible({ timeout: 30_000 });
+    await expect(this.modalHeading, "'Add New Payee' modal heading should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
     await expect(this.modalSubHeading, "Add New Payee sub-heading should be visible").toBeVisible();
     await expect(this.accountNameInput, "Add New Payee: Account Holder's Name field should be visible").toBeVisible();
     await expect(this.nickNameInput, "Add New Payee: Nickname field should be visible").toBeVisible();
@@ -93,7 +94,7 @@ class AddPayeePage {
     await expect(
       this.bankSelect,
       "Add New Payee: the Bank dropdown should load (it renders as a skeleton loader until the bank list arrives)"
-    ).toBeVisible({ timeout: 90_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.VERY_SLOW });
   }
 
   /**
@@ -156,13 +157,13 @@ class AddPayeePage {
    */
   async submit() {
     await expect(this.nextButton, "'Next' should be enabled once the payee form is valid").toBeEnabled({
-      timeout: 20_000,
+      timeout: TIMEOUTS.ACTION,
     });
     // Best-effort background capture of the save response (available by the time we assert).
     this.lastSaveResponse = "";
     this.page
       .waitForResponse((r) => r.request().method() === "POST" && !/google-analytics/.test(r.url()), {
-        timeout: 60_000,
+        timeout: TIMEOUTS.SLOW_LOAD,
       })
       .then(async (r) => {
         this.lastSaveResponse = await r.text().catch(() => "");
@@ -176,7 +177,7 @@ class AddPayeePage {
     await expect(
       this.requiredError,
       "An inline 'is required' validation message should be shown when the payee form is empty"
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.UI });
     // ASSERTION: the form does not advance.
     await expect(this.accountNumberInput, "The Add New Payee form should stay open").toBeVisible();
   }
@@ -215,7 +216,7 @@ class AddPayeePage {
     await expect(
       payeeCell,
       `The newly added payee "${nickName}" should appear as a record in the Saved Payees table`
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /** Collects the visible headings (and any toast) for diagnostics. */

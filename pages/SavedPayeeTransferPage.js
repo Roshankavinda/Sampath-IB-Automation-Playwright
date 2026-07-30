@@ -1,4 +1,5 @@
 const { expect } = require("@playwright/test");
+const TIMEOUTS = require("../config/timeouts");
 const { selectOptionByLabelContains, assertDropdownPopulated, assertSelectedContains } = require("../utils/helpers");
 
 /**
@@ -41,9 +42,9 @@ class SavedPayeeTransferPage {
 
   /** ASSERTION: the Saved Payees page is displayed. */
   async assertLoaded() {
-    await expect(this.heading, "'Saved Payees' heading should be visible").toBeVisible({ timeout: 60_000 });
+    await expect(this.heading, "'Saved Payees' heading should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
     await expect(this.filtersPrompt, "The Saved Payees filter prompt should be visible").toBeVisible();
-    await expect(this.addNewPayeeButton, "'Add New Payee' button should be visible").toBeVisible({ timeout: 60_000 });
+    await expect(this.addNewPayeeButton, "'Add New Payee' button should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
   }
 
   /**
@@ -54,7 +55,7 @@ class SavedPayeeTransferPage {
     const row = this.payeeRows.filter({ hasText: payeeName }).first();
 
     const found = await row
-      .waitFor({ state: "visible", timeout: 60_000 })
+      .waitFor({ state: "visible", timeout: TIMEOUTS.SLOW_LOAD })
       .then(() => true)
       .catch(() => false);
 
@@ -85,13 +86,13 @@ class SavedPayeeTransferPage {
     await row.locator('input[type="checkbox"]').check();
 
     await expect(this.payNowButton, "'Pay Now' should appear once a saved payee is selected").toBeVisible({
-      timeout: 20_000,
+      timeout: TIMEOUTS.ACTION,
     });
     await this.payNowButton.click();
 
     // ASSERTION: the transfer form opened for that payee.
     await expect(this.amountInput, "The transfer form (Amount) should open after 'Pay Now'").toBeVisible({
-      timeout: 30_000,
+      timeout: TIMEOUTS.LOAD,
     });
   }
 
@@ -131,7 +132,7 @@ class SavedPayeeTransferPage {
     const digits = (s) => String(s).replace(/\D/g, "");
     await expect
       .poll(async () => digits(await this.amountInput.inputValue()), {
-        timeout: 15_000,
+        timeout: TIMEOUTS.UI,
         message: "Amount field should contain the entered amount",
       })
       .toContain(digits(data.amount));
@@ -144,7 +145,7 @@ class SavedPayeeTransferPage {
 
   async submit() {
     await expect(this.submitButton, "The 'Transfer LKR ...' button should be enabled once the form is valid")
-      .toBeEnabled({ timeout: 20_000 });
+      .toBeEnabled({ timeout: TIMEOUTS.ACTION });
     await this.submitButton.click();
   }
 }
