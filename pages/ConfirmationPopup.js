@@ -115,6 +115,10 @@ class ConfirmationPopup {
    * here too.
    */
   async enterOtpAndConfirm(otp) {
+    // Some confirmation screens (e.g. FOREIGN CURRENCY settlement) add an acknowledgement
+    // checkbox that must be ticked before Confirm enables. Tick it if present - no-op otherwise.
+    await this.acknowledgeIfPresent();
+
     if (process.env.IB_MANUAL_OTP !== "false") return this.waitForManualOtp();
 
     await fillOtpBoxes(this.page, otp);
@@ -122,6 +126,34 @@ class ConfirmationPopup {
       timeout: TIMEOUTS.QUICK,
     });
     await this.confirmButton.click();
+  }
+
+  /**
+   * Ticks an acknowledgement / agreement checkbox on the confirmation-OTP screen if one is
+   * shown. Foreign-currency settlement asks you to acknowledge the exchange rate before the
+   * Confirm button enables; the plain LKR flows have no such box, so this is a no-op there.
+   * Handles a native checkbox OR the app's custom square button (button.appearance-none).
+   * // VERIFY the exact FCY-settlement control against the live app.
+   */
+  async acknowledgeIfPresent() {
+    const ack = this.page
+      .getByText(/acknowledge|i agree|i have read|i understand|exchange rate|confirm the (rate|conversion)|declaration/i)
+      .first();
+    if (!(await ack.isVisible().catch(() => false))) return;
+
+    // Prefer a visible, not-yet-checked native checkbox.
+    const boxes = this.page.getByRole("checkbox");
+    const count = await boxes.count().catch(() => 0);
+    for (let i = 0; i < count; i++) {
+      const cb = boxes.nth(i);
+      if ((await cb.isVisible().catch(() => false)) && !(await cb.isChecked().catch(() => false))) {
+        await cb.check({ force: true }).catch(() => {});
+        if (await cb.isChecked().catch(() => false)) return;
+      }
+    }
+    // Else the app's custom square-button checkbox (as used on the Web Card agreement).
+    const custom = this.page.locator('button[class*="appearance-none"]').last();
+    if (await custom.isVisible().catch(() => false)) await custom.click({ force: true }).catch(() => {});
   }
 
   /**

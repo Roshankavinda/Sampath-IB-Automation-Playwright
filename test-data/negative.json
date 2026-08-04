@@ -182,14 +182,14 @@
       "card": "1071",
       "settlementType": "Custom Amount",
       "amount": "0",
-      "expectedError": "custom amount must be greater than"
+      "expectedError": "Custom amount must be greater than 0.00"
     },
     "negativeAmount": {
       "fromAccount": "1018 5010 4310",
       "card": "1071",
       "settlementType": "Custom Amount",
       "amount": "-100",
-      "expectedError": "greater than|valid|amount|invalid"
+      "expectedError": "Custom amount must be greater than"
     }
   },
   "billPayment": {
@@ -255,16 +255,16 @@
     "nonNumericAmount": { "amount": "abcd", "expectedError": "required|valid|amount|numeric" }
   },
   "savedBillerPayment": {
-    "biller": "PW Dialog Bill",
+    "biller": "Test Issue",
     "fromAccount": "1018 5010 4310",
     "zeroAmount": {
-      "biller": "PW Dialog Bill",
+      "biller": "Test Issue",
       "fromAccount": "1018 5010 4310",
       "amount": "0",
       "expectedError": "minimum|greater than|amount|valid|required"
     },
     "negativeAmount": {
-      "biller": "PW Dialog Bill",
+      "biller": "Test Issue",
       "fromAccount": "1018 5010 4310",
       "amount": "-100",
       "expectedError": "greater than|valid|amount|invalid"

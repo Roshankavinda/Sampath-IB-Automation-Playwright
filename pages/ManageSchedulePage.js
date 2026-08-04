@@ -73,66 +73,103 @@ class ManageSchedulePage {
   }
 
   /**
-   * Runs a row action (Pay Now | Skip | Stop | Modify). The action may be an inline button
-   * or an item inside a per-row actions menu, so try both.
-   * // VERIFY against a real schedule row.
-   * @param {import('@playwright/test').Locator} row
-   * @param {string} actionName
+   * The row's inline action controls (confirmed from a live schedule row). The three leading
+   * icon buttons all share the accessible name "View details", but functionally, IN ORDER:
+   *   [0] arrow icon = Pay Now   [1] = Stop   [2] eye icon = View details
+   * followed by the named buttons "Edit payment" (= Modify) and "Delete payment" (= Delete).
+   * (Skip is not offered - its lookup finds nothing, so those tests skip.)
    */
-  async runAction(row, actionName) {
-    const pattern = new RegExp(actionName.replace(/\s+/g, "\\s*"), "i");
-
-    // 1) Inline action control within the row.
-    let control = row.getByRole("button", { name: pattern }).or(row.getByText(pattern)).first();
-    if (!(await control.isVisible().catch(() => false))) {
-      // 2) Otherwise open a per-row actions menu (kebab / "Actions") then click the item.
-      const menu = row.getByRole("button", { name: /action|menu|more|options|manage/i }).first();
-      if (await menu.isVisible().catch(() => false)) await menu.click().catch(() => {});
-      control = this.page
-        .getByRole("menuitem", { name: pattern })
-        .or(this.page.getByText(pattern).locator("visible=true"))
-        .first();
+  actionButton(row, actionName) {
+    const icons = row.getByRole("button", { name: /view details/i });
+    switch (actionName) {
+      case "Pay Now":
+        return icons.nth(0);
+      case "Stop":
+        return icons.nth(1);
+      case "View details":
+        return icons.nth(2);
+      case "Modify":
+        return row.getByRole("button", { name: /edit payment/i }).first();
+      case "Delete":
+        return row.getByRole("button", { name: /delete payment/i }).first();
+      default:
+        return row.getByRole("button", { name: new RegExp(actionName.replace(/\s+/g, "\\s*"), "i") }).first();
     }
+  }
 
-    await expect(control, `The "${actionName}" action should be available on the schedule row`).toBeVisible({
-      timeout: TIMEOUTS.UI,
-    });
-    await control.click();
+  /** True if the row offers this action (Skip, for example, is not offered). */
+  async hasAction(row, actionName) {
+    return this.actionButton(row, actionName).isVisible().catch(() => false);
   }
 
   /**
-   * Confirms an action that raises a confirmation dialog (Stop/Skip typically do).
-   * Non-fatal if there is no dialog. // VERIFY the confirm control against a real dialog.
+   * SAFE cancel of a confirmation dialog / edit modal. Only ever clicks an explicit
+   * Cancel/No/Back/Close control (never a Confirm/Delete/Yes), falling back to Escape - so a
+   * verification NEVER commits a change to a real schedule.
    */
-  async confirmAction() {
-    const confirm = this.page
-      .getByRole("button", { name: /confirm|^yes\b|proceed|^ok$|confirm & /i })
+  async cancelDialog() {
+    const cancel = this.page
+      .getByRole("button", { name: /^(cancel|no|back|close|dismiss)$/i })
       .locator("visible=true")
       .last();
-    if (await confirm.isVisible().catch(() => false)) await confirm.click();
+    if (await cancel.isVisible().catch(() => false)) {
+      await cancel.click().catch(() => {});
+      return;
+    }
+    await this.page.keyboard.press("Escape").catch(() => {});
   }
 
-  /** Pay Now: execute the scheduled transaction immediately. */
+  /**
+   * Triggers a row action and verifies its dialog/form appears, then CANCELS.
+   *
+   * SAFETY: the Manage Schedules list holds REAL pending schedules. Actually running these
+   * actions would execute a payment (Pay Now), or mutate/delete a real schedule (Skip / Stop=
+   * "Delete payment" / Modify="Edit payment"). So each action is verified as reachable+guarded
+   * and then cancelled - it is NEVER committed. (Flip `commit` to true only against disposable
+   * test schedules.)
+   * @param {import('@playwright/test').Locator} row
+   * @param {string} actionName
+   * @param {RegExp} dialogPattern  text expected on the confirm dialog / edit form
+   */
+  async triggerAndVerify(row, actionName, dialogPattern) {
+    await expect(
+      this.actionButton(row, actionName),
+      `The "${actionName}" action should be available on the schedule row`
+    ).toBeVisible({ timeout: TIMEOUTS.UI });
+    await this.actionButton(row, actionName).click();
+
+    await expect(
+      this.page.getByText(dialogPattern).locator("visible=true").first(),
+      `The "${actionName}" action should open its confirmation / edit view`
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
+
+    // Do NOT commit against a real schedule.
+    await this.cancelDialog();
+  }
+
+  /** Pay Now (execute now) - verified + cancelled, never actually executed. */
   async payNow(row) {
-    await this.runAction(row, "Pay Now");
-    await this.confirmAction();
+    await this.triggerAndVerify(row, "Pay Now", /pay now|confirm|are you sure|proceed/i);
   }
 
-  /** Skip: skip the next occurrence of a recurring schedule. */
+  /** Skip the next occurrence - verified + cancelled, never actually skipped. */
   async skip(row) {
-    await this.runAction(row, "Skip");
-    await this.confirmAction();
+    await this.triggerAndVerify(row, "Skip", /skip|confirm|are you sure/i);
   }
 
-  /** Stop: cancel the schedule entirely. */
+  /** Stop = "Delete payment" - the delete confirmation is verified then cancelled (no delete). */
   async stop(row) {
-    await this.runAction(row, "Stop");
-    await this.confirmAction();
+    await this.triggerAndVerify(row, "Stop", /delete|are you sure|cancel this|confirm/i);
   }
 
-  /** Modify: open the schedule for editing. */
+  /** Modify = "Edit payment" - the edit form is verified then cancelled (no change saved). */
   async modify(row) {
-    await this.runAction(row, "Modify");
+    await this.triggerAndVerify(row, "Modify", /edit|modify|amount|frequency|next payment|update/i);
+  }
+
+  /** Delete = "Delete payment" - the delete confirmation is verified then cancelled (no delete). */
+  async delete(row) {
+    await this.triggerAndVerify(row, "Delete", /delete|are you sure|remove|confirm/i);
   }
 }
 

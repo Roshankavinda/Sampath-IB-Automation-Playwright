@@ -2,11 +2,11 @@
   "card": "1071",
   "fromAccount": "1018 5010 4310",
   "settlementType": "Custom Amount",
-  "amount": "1000",
+  "amount": "200",
   "foreignCurrency": {
     "card": "1071",
     "fromAccount": "USD",
     "settlementType": "Custom Amount",
-    "amount": "1000"
+    "amount": "200"
   }
 }

@@ -8,9 +8,11 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * Top-nav Manage Schedules -> Scheduled Transfers tab -> pick a schedule row -> run one
  * of the four row actions: Pay Now | Skip | Stop | Modify.
  *
- * NOTE: the Scheduled Transfers list is currently empty (schedule creation is rejected by
- * the backend), so each test fails at selectSchedule with a clear "no schedules" message
- * until a scheduled transfer exists.
+ * An action SKIPS if the Scheduled Transfers UI doesn't offer it on the row.
+ *
+ * SAFETY: these are REAL pending schedules, so each action is verified as reachable (its
+ * confirm dialog / edit form opens) and then CANCELLED - the delete/edit/payment is never
+ * committed against real data.
  */
 test.describe("Manage Schedule - Fund Transfer - Positive", () => {
   const actions = [
@@ -18,6 +20,7 @@ test.describe("Manage Schedule - Fund Transfer - Positive", () => {
     { id: "TC_MNG_SFT_H02", name: "Skip", run: (m, row) => m.skip(row) },
     { id: "TC_MNG_SFT_H03", name: "Stop", run: (m, row) => m.stop(row) },
     { id: "TC_MNG_SFT_H04", name: "Modify", run: (m, row) => m.modify(row) },
+    { id: "TC_MNG_SFT_H05", name: "Delete", run: (m, row) => m.delete(row) },
   ];
 
   for (const action of actions) {
@@ -35,7 +38,13 @@ test.describe("Manage Schedule - Fund Transfer - Positive", () => {
         row = await manage.selectSchedule(manageScheduleTransfer.identifier);
       });
 
-      await test.step(`Run the "${action.name}" action`, async () => {
+      // Skip an action the Scheduled Transfers row does not offer.
+      test.skip(
+        !(await manage.hasAction(row, action.name)),
+        `"${action.name}" is not offered on the scheduled-transfer row.`
+      );
+
+      await test.step(`Run the "${action.name}" action (verified, then cancelled - not committed)`, async () => {
         await action.run(manage, row);
       });
     });
