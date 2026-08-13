@@ -15,6 +15,17 @@ test.describe("@Regression - Positive", () => {
   require("./login.spec");
   require("./forgotPassword.spec");
   require("./dashboard.spec");
+  require("./portfolio.spec");
+  require("./myAccounts.spec");
+  require("./transactionHistory.spec");
+  require("./billPaymentCreditCard.spec");
+  require("./sliplessOtherAccount.spec");
+  require("./addPayeeCard.spec");
+  require("./savedPayeeRemoveFavourite.spec");
+  require("./savedBillerRemoveFavourite.spec");
+  require("./quickActions.spec");
+  require("./freezeAccounts.spec");
+  require("./openSavingAccount.spec");
   require("./fundTransferOwnAccount.spec");
   require("./fundTransferIntraBank.spec");
   require("./fundTransferOtherBank.spec");
@@ -26,7 +37,11 @@ test.describe("@Regression - Positive", () => {
   require("./addPayee.spec");
   require("./addBiller.spec");
   require("./transferSavedPayee.spec");
+  require("./transferSavedPayeeMultiple.spec");
   require("./billPaymentSavedBiller.spec");
+  require("./billPaymentSavedBillerMultiple.spec");
+  require("./savedBillerFavourite.spec");
+  require("./savedPayeeFavourite.spec");
   require("./scheduleFundTransfer.spec");
   require("./scheduleBillPayment.spec");
   require("./manageScheduleFundTransfer.spec");
@@ -37,4 +52,5 @@ test.describe("@Regression - Positive", () => {
   require("./slipless.spec");
   require("./selfServices.spec");
   require("./messages.spec");
+  require("./settings.spec");
 });

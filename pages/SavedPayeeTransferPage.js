@@ -38,6 +38,209 @@ class SavedPayeeTransferPage {
     this.transferModeOnline = page.locator('input[name="transferMode"][value="ONLINE"]');
     // The submit button carries the running total, so match on its "Transfer LKR ..." prefix.
     this.submitButton = page.getByRole("button", { name: /^transfer\s+lkr/i }).first();
+
+    // ---- Favourites ----
+    // Each row has an "Add to Favorites" cell (a star control). Favourited payees appear in
+    // the right-hand "Your favourite list" panel.
+    this.favouritesPanel = page.getByText(/your favourite list/i).first();
+    this.favouritesSearch = page.getByPlaceholder(/search favourite payees/i);
+    this.noFavouritesState = page.getByText(/no favou?rite payees? found/i);
+  }
+
+  /**
+   * The row's "Add to Favorites" control (star). The Saved Payees table columns are:
+   * Add to List | Account Number | Account Name | Nickname | Bank Name | Transaction Type |
+   * Add to Favorites | Actions - so the star lives in cell index 6.
+   */
+  favouriteControl(row) {
+    const byName = row.getByRole("button", { name: /favou?rite|star/i }).first();
+    return byName.or(row.getByRole("cell").nth(6).locator("button, img, svg").first());
+  }
+
+  /** The favourites panel entry for a payee (it renders outside the table). */
+  favouriteEntry(payeeName) {
+    return this.favouritesPanel
+      .locator("xpath=ancestor::*[3]")
+      .getByText(new RegExp(payeeName, "i"))
+      .first();
+  }
+
+  /**
+   * Returns the saved-payee row for `payeeName`. The table intermittently renders empty, so
+   * this retries by re-opening Saved Payees before giving up.
+   */
+  async findRow(payeeName) {
+    const row = this.payeeRows.filter({ hasText: payeeName }).first();
+    let found = false;
+    for (let attempt = 0; attempt < 3 && !found; attempt++) {
+      found = await row
+        .waitFor({ state: "visible", timeout: TIMEOUTS.ACTION })
+        .then(() => true)
+        .catch(() => false);
+      if (found) break;
+      // Re-fetch the list via the "Saved Payees" tab.
+      await this.page.getByRole("button", { name: "Saved Payees", exact: true }).first().click().catch(() => {});
+      await this.page.waitForTimeout(2000);
+    }
+    if (!found) {
+      const listed = (await this.payeeRows.allInnerTexts().catch(() => []))
+        .map((t) => t.replace(/\s+/g, " ").trim())
+        .filter(Boolean);
+      throw new Error(
+        `No saved payee matching "${payeeName}" is listed. ` +
+          (listed.length ? `Saved payees on the page: ${listed.join(" / ")}.` : "The account has no saved payees at all.")
+      );
+    }
+    return row;
+  }
+
+  /** ASSERTION: the favourites panel ("Your favourite list") is displayed. */
+  async assertFavouritesPanelShown() {
+    await expect(this.favouritesPanel, "The 'Your favourite list' panel should be visible").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+  }
+
+  /** True if the payee is already in the favourites panel. */
+  async isFavourite(payeeName) {
+    return this.favouriteEntry(payeeName).isVisible().catch(() => false);
+  }
+
+  /** How many times the payee appears in the favourites panel (duplicate check). */
+  async favouriteEntryCount(payeeName) {
+    return this.favouritesPanel
+      .locator("xpath=ancestor::*[3]")
+      .getByText(new RegExp(payeeName, "i"))
+      .count()
+      .catch(() => 0);
+  }
+
+  // ---- Multiple (batch) transfers ----
+  // Selecting N payees builds an indexed form: tranList.0.*, tranList.1.*, ...
+
+  /** Amount field for the Nth payee block on the batch transfer form. */
+  amountInputAt(index) {
+    return this.page.locator(`input[name="tranList.${index}.amount"]`);
+  }
+
+  /** Purpose dropdown for the Nth payee block. */
+  purposeSelectAt(index) {
+    return this.page.locator(`select[name="tranList.${index}.purpose"]`);
+  }
+
+  /** Beneficiary-remark field for the Nth payee block. */
+  beneficiaryRemarkAt(index) {
+    return this.page.locator(`input[name="tranList.${index}.beneficiaryRemarks"]`);
+  }
+
+  /** The nicknames currently listed, in table order (Nickname is the 4th column). */
+  async listedPayeeNames() {
+    const n = await this.payeeRows.count().catch(() => 0);
+    const names = [];
+    for (let i = 0; i < n; i++) {
+      const name = await this.payeeRows.nth(i).getByRole("cell").nth(3).innerText().catch(() => "");
+      if (name.trim()) names.push(name.trim());
+    }
+    return names;
+  }
+
+  /**
+   * Ticks the "Add to List." checkbox of SEVERAL saved payees, then clicks "Pay Now" once to
+   * transfer to them together. Each selected payee becomes its own tranList block.
+   * @param {string[]} payeeNames nicknames to include in the batch
+   */
+  async selectMultipleSavedPayees(payeeNames) {
+    for (const name of payeeNames) {
+      const row = await this.findRow(name);
+      await row.locator('input[type="checkbox"]').check().catch(() => {});
+      await expect(
+        row.locator('input[type="checkbox"]'),
+        `"${name}" should be ticked for the batch transfer`
+      ).toBeChecked({ timeout: TIMEOUTS.UI });
+    }
+
+    await expect(this.payNowButton, "'Pay Now' should appear once payees are selected").toBeVisible({
+      timeout: TIMEOUTS.ACTION,
+    });
+    await this.payNowButton.click();
+
+    // ASSERTION: the batch transfer form opened (the first payee's amount block).
+    await expect(this.amountInputAt(0), "The batch transfer form should open after 'Pay Now'").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+  }
+
+  /**
+   * ASSERTION: the form shows one amount block per selected payee (tranList.0 .. tranList.N-1).
+   */
+  async assertBatchFormShows(payeeNames) {
+    for (let i = 0; i < payeeNames.length; i++) {
+      await expect(
+        this.amountInputAt(i),
+        `The batch form should include an amount block for "${payeeNames[i]}" (tranList.${i})`
+      ).toBeVisible({ timeout: TIMEOUTS.LOAD });
+    }
+  }
+
+  /**
+   * Fills the funding account once, then the amount / purpose / remark of EVERY payee block.
+   * @param {{ fromAccount?: string, amount?: string, purpose?: string, beneficiaryRemark?: string }} data
+   * @param {number} count how many payee blocks to fill
+   */
+  async fillBatchTransfer(data, count) {
+    if (data.fromAccount) {
+      await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount).catch(() => {});
+      await assertSelectedContains(this.fromAccountSelect, data.fromAccount, "From Account");
+    }
+
+    for (let i = 0; i < count; i++) {
+      if (data.amount != null) await this.amountInputAt(i).fill(String(data.amount)).catch(() => {});
+      if (data.purpose && (await this.purposeSelectAt(i).isVisible().catch(() => false))) {
+        await selectOptionByLabelContains(this.purposeSelectAt(i), data.purpose).catch(() => {});
+      }
+      if (data.beneficiaryRemark && (await this.beneficiaryRemarkAt(i).isVisible().catch(() => false))) {
+        await this.beneficiaryRemarkAt(i).fill(data.beneficiaryRemark).catch(() => {});
+      }
+    }
+  }
+
+  /**
+   * Removes a payee from favourites by clicking its star again (the control toggles).
+   * Safe + reversible: the positive favourites test re-adds it.
+   */
+  async removeFromFavourites(row, name) {
+    const star = this.favouriteControl(row);
+    await expect(star, `The favourites control should be available for "${name}"`).toBeVisible({
+      timeout: TIMEOUTS.UI,
+    });
+    await star.click({ force: true });
+    await this.page.waitForTimeout(2000);
+  }
+
+  /** Types into the favourites search box to filter the favourites panel. */
+  async searchFavourites(text) {
+    await expect(this.favouritesSearch, "The favourites search box should be visible").toBeVisible({
+      timeout: TIMEOUTS.UI,
+    });
+    await this.favouritesSearch.fill(text);
+    await this.page.waitForTimeout(1500); // let the panel filter
+  }
+
+  /** Clicks the row's "Add to Favorites" star. */
+  async addToFavourites(row, payeeName) {
+    const star = this.favouriteControl(row);
+    await expect(star, `The "Add to Favorites" control should be available for "${payeeName}"`).toBeVisible({
+      timeout: TIMEOUTS.UI,
+    });
+    await star.click({ force: true });
+  }
+
+  /** ASSERTION: the payee now appears in the "Your favourite list" panel. */
+  async assertAddedToFavourites(payeeName) {
+    await expect(
+      this.favouriteEntry(payeeName),
+      `"${payeeName}" should appear in the favourites list after being added`
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
   }
 
   /** ASSERTION: the Saved Payees page is displayed. */

@@ -7,5 +7,10 @@
   "withdrawal": {
     "account": "1018 5010 4310",
     "amount": "1000"
+  },
+  "depositOtherAccount": {
+    "accountType": "Other Accounts",
+    "account": "1018 5010 4310",
+    "amount": "1000"
   }
 }

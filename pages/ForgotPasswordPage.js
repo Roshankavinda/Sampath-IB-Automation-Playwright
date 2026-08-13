@@ -47,6 +47,21 @@ class ForgotPasswordPage {
     // icon-only forward button that enables once the box is filled. Confirmed from the live DOM.
     this.securityAnswerInput = page.getByPlaceholder("Enter here");
     this.cancelButton = page.getByRole("button", { name: /^cancel$/i });
+
+    // Final step (Step 5 of 5): set the new password. Both fields also use placeholder
+    // "Enter here", so they are targeted by their accessible label, not the placeholder.
+    this.newPasswordInput = page.getByRole("textbox", { name: /enter new password/i }).first();
+    this.confirmPasswordInput = page.getByRole("textbox", { name: /confirm new password/i }).first();
+    this.resetSubmitButton = page.getByRole("button", { name: /^submit$/i }).first();
+  }
+
+  /** True once the wizard is on the new-password step (its fields also use "Enter here"). */
+  async isNewPasswordStep() {
+    return this.page
+      .getByText(/enter new password|confirm new password|step 5 of 5/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
   }
 
   /** ASSERTION: the "Password Reset" method-selection screen is displayed. */
@@ -246,6 +261,10 @@ class ForgotPasswordPage {
     const maxScreens = answers.length + 3; // safety guard against an unexpected loop
 
     for (let screen = 0; screen < maxScreens; screen++) {
+      // Stop once the wizard reaches the new-password step - its fields also carry the
+      // "Enter here" placeholder, so they must NOT be treated as a security answer.
+      if (await this.isNewPasswordStep()) return;
+
       const input = await this.visibleAnswerInput();
       if (!(await input.isVisible().catch(() => false))) break; // no more security questions
 
@@ -259,6 +278,7 @@ class ForgotPasswordPage {
         }
       }
       if (picked === null) {
+        if (await this.isNewPasswordStep()) return; // reached the final step - done
         const qText = await this.visibleQuestionText();
         throw new Error(
           `Reached a security question with no configured answer: "${qText}". ` +
@@ -294,6 +314,56 @@ class ForgotPasswordPage {
       throw new Error(
         "The reset flow did not reach the new-password step after answering the security questions. " +
           "// VERIFY the new-password screen wording/fields against the live app."
+      );
+    }
+  }
+
+  /** Step 5: enter the new password into both the "New Password" and "Confirm" fields. */
+  async enterNewPassword(password) {
+    await expect(this.newPasswordInput, "The 'Enter New Password' field should be shown on the final step").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+    await this.newPasswordInput.fill(password);
+    await this.confirmPasswordInput.fill(password);
+    await expect(this.newPasswordInput, "New password should hold the entered value").toHaveValue(password);
+    await expect(this.confirmPasswordInput, "Confirm password should match").toHaveValue(password);
+  }
+
+  /** ASSERTION: with both password fields matching, the reset is ready to submit. */
+  async assertReadyToSubmit() {
+    await expect(
+      this.resetSubmitButton,
+      "Submit should be enabled once the new password and its confirmation match"
+    ).toBeEnabled({ timeout: TIMEOUTS.UI });
+  }
+
+  /**
+   * Submits the new password to COMPLETE the reset.
+   *
+   * WARNING: this changes the real account password. It only runs when the spec opts in
+   * (IB_COMPLETE_RESET=true) AND is called with the CURRENT password, so the login is not
+   * actually altered and the rest of the suite keeps working.
+   */
+  async submitNewPassword() {
+    await this.assertReadyToSubmit();
+    await this.resetSubmitButton.click();
+  }
+
+  /** ASSERTION: the reset completed (a success message or a return to the login screen). */
+  async assertResetComplete() {
+    const ok = await Promise.race([
+      this.page
+        .getByText(/success|password.*(reset|changed|updated)|successfully|login/i)
+        .first()
+        .waitFor({ state: "visible", timeout: TIMEOUTS.LOAD })
+        .then(() => true)
+        .catch(() => false),
+      this.usernameInput.waitFor({ state: "visible", timeout: TIMEOUTS.LOAD }).then(() => true).catch(() => false),
+    ]);
+    if (!ok) {
+      throw new Error(
+        "The password reset did not confirm completion after Submit (no success message and did not return to login). " +
+          "// VERIFY the reset success screen. Note: the app may reject a new password equal to the current one."
       );
     }
   }

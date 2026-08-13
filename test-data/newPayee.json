@@ -3,5 +3,12 @@
   "bank": "TEST BANK B",
   "accountName": "Test User",
   "nickName": "PWOtherBank",
-  "accountNumber": "9901234561"
+  "accountNumber": "9901234561",
+  "cardPayee": {
+    "type": "Card",
+    "bank": "TEST BANK B",
+    "accountName": "Test User",
+    "nickName": "PWCard",
+    "accountNumber": "4111111111111111"
+  }
 }

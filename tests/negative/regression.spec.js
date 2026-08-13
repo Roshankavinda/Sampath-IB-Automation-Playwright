@@ -15,6 +15,14 @@ test.describe("@Regression - Negative", () => {
   require("./login.spec");
   require("./forgotPassword.spec");
   require("./dashboard.spec");
+  require("./portfolio.spec");
+  require("./crossCutting.spec");
+  require("./manageScheduleFundTransfer.spec");
+  require("./manageScheduleBiller.spec");
+  require("./loanSettlement.spec");
+  require("./quickActions.spec");
+  require("./freezeAccounts.spec");
+  require("./openSavingAccount.spec");
   require("./fundTransferOwnAccount.spec");
   require("./fundTransferIntraBank.spec");
   require("./fundTransferOtherBank.spec");
@@ -26,7 +34,11 @@ test.describe("@Regression - Negative", () => {
   require("./addPayee.spec");
   require("./addBiller.spec");
   require("./transferSavedPayee.spec");
+  require("./transferSavedPayeeMultiple.spec");
   require("./billPaymentSavedBiller.spec");
+  require("./billPaymentSavedBillerMultiple.spec");
+  require("./savedBillerFavourite.spec");
+  require("./savedPayeeFavourite.spec");
   require("./scheduleFundTransfer.spec");
   require("./scheduleBillPayment.spec");
   require("./fdCreate.spec");
@@ -34,4 +46,5 @@ test.describe("@Regression - Negative", () => {
   require("./slipless.spec");
   require("./selfServices.spec");
   require("./messages.spec");
+  require("./settings.spec");
 });

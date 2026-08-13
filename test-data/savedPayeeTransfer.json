@@ -3,5 +3,12 @@
   "fromAccount": "1018 5010 4310",
   "amount": "100",
   "purpose": "Wages & Salaries",
-  "beneficiaryRemark": "PW Saved Payee"
+  "beneficiaryRemark": "PW Saved Payee",
+  "multiple": {
+    "payees": [],
+    "fromAccount": "1018 5010 4310",
+    "amount": "100",
+    "purpose": "Wages & Salaries",
+    "beneficiaryRemark": "PW Batch Payee"
+  }
 }

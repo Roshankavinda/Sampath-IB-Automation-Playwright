@@ -34,6 +34,13 @@ class SavedBillerPaymentPage {
     // "Pay Now" action that opens the payment form (the same pattern as the Saved Payees table).
     this.payNowButton = page.getByRole("button", { name: /pay now|make payment|^pay$|proceed/i }).first();
 
+    // ---- Favourites ----
+    // Each row has an "Add to Favourites" cell (a star control). Favourited billers appear in
+    // the right-hand "Your favourite list" panel with a "FAVORITES" badge.
+    this.favouritesPanel = page.getByText(/your favourite list/i).first();
+    this.favouritesSearch = page.getByPlaceholder(/search favourite billers/i);
+    this.noFavouritesState = page.getByText(/no favou?rite billers? found/i);
+
     // Payment form shown after a saved biller is picked (same form as regular Bill Payment).
     this.fromAccountSelect = page.locator('select[name="accountFrom"]');
     this.amountInput = page.locator('input[name="amount"]').or(page.getByPlaceholder(/enter amount/i)).first();
@@ -43,7 +50,205 @@ class SavedBillerPaymentPage {
     this.reEnterInput = page.getByPlaceholder(/re-?enter/i).first();
     // The submit control is "Pay now LKR <amount>" (NOT "Next"). Use .last() so we get the
     // form's button, not the list's bare "Pay now" that opened it.
-    this.nextButton = page.getByRole("button", { name: /pay now\s+(lkr|usd)|proceed to pay|^(next|proceed|submit)$/i }).last();
+    this.nextButton = page
+      .getByRole("button", { name: /pay now\s+(lkr|usd)|proceed to pay|^(next|proceed|submit)$/i })
+      .last();
+  }
+
+  /** The row's "Add to Favourites" control (star) - the 7th cell, after "Field Value". */
+  favouriteControl(row) {
+    const byName = row.getByRole("button", { name: /favou?rite|star/i }).first();
+    return byName.or(row.getByRole("cell").nth(6).locator("button, img, svg").first());
+  }
+
+  /** The favourites panel entry for a biller (it renders outside the table). */
+  favouriteEntry(billerName) {
+    return this.favouritesPanel
+      .locator("xpath=ancestor::*[3]")
+      .getByText(new RegExp(billerName, "i"))
+      .first();
+  }
+
+  /**
+   * Returns the saved-biller row for `billerName`, retrying the (intermittently slow) list.
+   * Shared by the payment and favourites flows.
+   */
+  async findRow(billerName) {
+    const row = this.page.getByRole("row", { name: new RegExp(billerName, "i") }).first();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      // Short per-attempt wait: the row either renders quickly or the table came back empty.
+      if (await row.waitFor({ state: "visible", timeout: TIMEOUTS.QUICK }).then(() => true).catch(() => false)) {
+        return row;
+      }
+      // The saved-billers table intermittently renders empty - re-fetch it via its tab.
+      await this.savedBillersTab.click().catch(() => {});
+      await this.page.waitForTimeout(2000);
+    }
+    const rows = (await this.page.getByRole("row").allInnerTexts().catch(() => []))
+      .slice(1)
+      .map((t) => t.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+    throw new Error(
+      `No saved biller matching "${billerName}" is listed. ` +
+        (rows.length ? `Saved billers on the page: ${rows.join(" / ")}.` : "The account has no saved billers at all.")
+    );
+  }
+
+  /** ASSERTION: the favourites panel ("Your favourite list") is displayed. */
+  async assertFavouritesPanelShown() {
+    await expect(this.favouritesPanel, "The 'Your favourite list' panel should be visible").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+  }
+
+  /** True if the biller is already in the favourites panel. */
+  async isFavourite(billerName) {
+    return this.favouriteEntry(billerName).isVisible().catch(() => false);
+  }
+
+  /** How many times the biller appears in the favourites panel (duplicate check). */
+  async favouriteEntryCount(billerName) {
+    return this.favouritesPanel
+      .locator("xpath=ancestor::*[3]")
+      .getByText(new RegExp(billerName, "i"))
+      .count()
+      .catch(() => 0);
+  }
+
+  /**
+   * Removes a biller from favourites by clicking its star again (the control toggles).
+   * Safe + reversible: the positive favourites test re-adds it.
+   */
+  async removeFromFavourites(row, name) {
+    const star = this.favouriteControl(row);
+    await expect(star, `The favourites control should be available for "${name}"`).toBeVisible({
+      timeout: TIMEOUTS.UI,
+    });
+    await star.click({ force: true });
+    await this.page.waitForTimeout(2000);
+  }
+
+  /** Types into the favourites search box to filter the favourites panel. */
+  async searchFavourites(text) {
+    await expect(this.favouritesSearch, "The favourites search box should be visible").toBeVisible({
+      timeout: TIMEOUTS.UI,
+    });
+    await this.favouritesSearch.fill(text);
+    await this.page.waitForTimeout(1500); // let the panel filter
+  }
+
+  /**
+   * Clicks the row's "Add to Favourites" star. If the biller is already a favourite this is a
+   * no-op (the caller checks isFavourite first), so the test stays re-runnable.
+   */
+  async addToFavourites(row, billerName) {
+    const star = this.favouriteControl(row);
+    await expect(star, `The "Add to Favourites" control should be available for "${billerName}"`).toBeVisible({
+      timeout: TIMEOUTS.UI,
+    });
+    await star.click({ force: true });
+  }
+
+  /** ASSERTION: the biller now appears in the "Your favourite list" panel. */
+  async assertAddedToFavourites(billerName) {
+    await expect(
+      this.favouriteEntry(billerName),
+      `"${billerName}" should appear in the favourites list after being added`
+    ).toBeVisible({ timeout: TIMEOUTS.LOAD });
+  }
+
+  // ---- Multiple (batch) payments ----
+
+  /** How many saved billers are currently listed (data rows only). */
+  async savedBillerCount() {
+    const n = await this.page.getByRole("row").count().catch(() => 0);
+    return Math.max(0, n - 1); // minus the header row
+  }
+
+  /** The template names currently listed, in table order. */
+  async listedBillerNames() {
+    const rows = this.page.locator("table tbody tr");
+    const n = await rows.count().catch(() => 0);
+    const names = [];
+    for (let i = 0; i < n; i++) {
+      // Template Name is the 3rd column (Add to List | S No. | Template Name | ...).
+      const name = await rows.nth(i).getByRole("cell").nth(2).innerText().catch(() => "");
+      if (name.trim()) names.push(name.trim());
+    }
+    return names;
+  }
+
+  /**
+   * Ticks the "Add to List" checkbox of SEVERAL saved billers, then clicks "Pay Now" once to
+   * pay them together. Each selected biller becomes its own block on the payment form.
+   * @param {string[]} billerNames template names to include in the batch
+   */
+  async selectMultipleSavedBillers(billerNames) {
+    for (const name of billerNames) {
+      const row = await this.findRow(name);
+      await row.locator('input[type="checkbox"]').check().catch(() => {});
+      await expect(
+        row.locator('input[type="checkbox"]'),
+        `"${name}" should be ticked for the batch payment`
+      ).toBeChecked({ timeout: TIMEOUTS.UI });
+    }
+
+    await expect(this.payNowButton, "'Pay Now' should appear once billers are selected").toBeVisible({
+      timeout: TIMEOUTS.ACTION,
+    });
+    await this.payNowButton.click();
+
+    // ASSERTION: the payment form opened for the batch.
+    await expect(this.fromAccountSelect, "The payment form should open after 'Pay Now'").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+  }
+
+  /**
+   * ASSERTION: the payment form shows one block per selected biller.
+   * // VERIFY the multi-block form against the live app (only a single-biller form was
+   * // observable - the account has just one saved biller).
+   */
+  async assertBatchFormShows(billerNames) {
+    for (const name of billerNames) {
+      await expect(
+        this.page.getByText(new RegExp(name, "i")).locator("visible=true").first(),
+        `The batch payment form should include "${name}"`
+      ).toBeVisible({ timeout: TIMEOUTS.LOAD });
+    }
+  }
+
+  /**
+   * Fills the amount (and the required "Re-enter reference") for EVERY block on the batch
+   * payment form. Amount fields are indexed once more than one biller is selected.
+   * @param {{ fromAccount?: string, amount?: string }} data
+   */
+  async fillBatchPayment(data) {
+    if (data.fromAccount) {
+      await selectOptionByLabelContains(this.fromAccountSelect, data.fromAccount).catch(() => {});
+      await assertSelectedContains(this.fromAccountSelect, data.fromAccount, "Pay From account");
+    }
+
+    // Every editable amount field on the form (one per selected biller).
+    const amounts = this.page.locator('input[name*="amount" i]').or(this.page.getByPlaceholder(/enter amount/i));
+    const aN = await amounts.count().catch(() => 0);
+    for (let i = 0; i < aN; i++) {
+      const field = amounts.nth(i);
+      if (data.amount && (await field.isEditable().catch(() => false))) {
+        await field.fill(String(data.amount)).catch(() => {});
+      }
+    }
+
+    // Every "Re-enter ..." reference field must mirror its pre-filled reference.
+    const reEnters = this.page.getByPlaceholder(/re-?enter/i);
+    const refs = this.page.locator('input[name^="fieldData."]');
+    const rN = await reEnters.count().catch(() => 0);
+    for (let i = 0; i < rN; i++) {
+      const target = reEnters.nth(i);
+      if (!(await target.isVisible().catch(() => false))) continue;
+      const ref = (await refs.nth(i).inputValue().catch(() => "")) || data.referenceValue || "";
+      if (ref) await target.fill(ref).catch(() => {});
+    }
   }
 
   /** ASSERTION: the Saved Billers page is displayed. */

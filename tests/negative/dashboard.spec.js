@@ -34,5 +34,20 @@ test.describe("Dashboard - Negative & Validation", () => {
     });
   });
 
+
+  test("TC_DASH_N03 - Verify that Recent Transactions never renders a blank panel", async ({ loggedInDashboard }) => {
+    // Each tab must show transactions OR an explicit empty state - a section with neither is
+    // a blank panel and a real UI defect.
+    for (const tabName of ["Transfer", "Payment", "Mobile Cash"]) {
+      const switched = await loggedInDashboard.switchRecentTransactionsTab(tabName);
+      if (!switched) continue;
+      const rendered = await loggedInDashboard.assertRecentTransactionsRendered(tabName);
+      expect(
+        rendered,
+        `The "${tabName}" tab renders a blank panel - no transactions and no "no transactions" message`
+      ).toBeTruthy();
+    }
+  });
+
   test.afterEach(async ({ page }, testInfo) => attachToastOnFailure(page, testInfo));
 });

@@ -23,6 +23,15 @@ class LoginPage {
     // (a wrong password also appends "REMAINING LOGIN ATTEMPTS: n").
     this.errorToast = page.getByText(/login failed|recheck the username|remaining login attempts/i).first();
     this.otpBoxes = page.locator("input.otp-box");
+
+    // Password mask/unmask toggle: a button next to the password field carrying a lucide
+    // eye icon ("lucide-eye-off" when masked, "lucide-eye" when revealed).
+    this.passwordToggle = page.locator('button[class*="password"]').first();
+    this.eyeOffIcon = page.locator("svg.lucide-eye-off").first();
+    this.eyeIcon = page.locator("svg.lucide-eye").first();
+
+    // OTP screen: "Resend OTP" starts disabled and becomes clickable after its countdown.
+    this.resendOtpButton = page.getByRole("button", { name: /resend otp/i }).first();
     // The login screen shows a non-clickable "Forgot Password?" label next to a link
     // labelled "Reset". Target the link by its href so we never click the plain text.
     this.forgotPasswordLink = page.locator('a[href*="forgot-password"]').first();

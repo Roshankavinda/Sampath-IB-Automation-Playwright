@@ -13,8 +13,11 @@ const { attachToastOnFailure } = require("../../utils/helpers");
  * (run headed - the test pauses at the OTP screen). Set IB_MANUAL_OTP=false to auto-fill
  * the bypass code.
  *
- * SAFETY: this spec stops once the flow reaches the NEW-PASSWORD step. It intentionally
- * does NOT set a new password, so it never changes the real account credentials.
+ * The final step enters a New Password + Confirm and SUBMITS to complete the reset.
+ *
+ * SAFETY: the new password is the CURRENT password (credentials.password from accounts.json),
+ * so completing the reset does NOT change the login and the rest of the suite keeps working.
+ * Set IB_SKIP_RESET_SUBMIT=true to only fill-and-stop (never click Submit) if you prefer.
  */
 test.describe("Forgot Password - Positive", () => {
   test("TC_FPWD_H01 - Verify that Valid username + OTP is accepted by the reset flow", async ({ page, loginPage }) => {
@@ -52,9 +55,26 @@ test.describe("Forgot Password - Positive", () => {
       await fpwd.answerSecurityQuestions(forgotPassword.securityAnswers);
     });
 
-    await test.step("Validate the flow reached the new-password step (does NOT set a new password)", async () => {
+    await test.step("Validate the flow reached the new-password step", async () => {
       await fpwd.assertReachedNewPasswordStep();
     });
+
+    await test.step("Enter the New Password and Confirm New Password", async () => {
+      // Use the SAME (current) password from accounts.json, so completing the reset would not
+      // actually change the login. Single source of truth - it can never drift from the real one.
+      await fpwd.enterNewPassword(credentials.password);
+      await fpwd.assertReadyToSubmit();
+    });
+
+    // Submit to COMPLETE the reset so you can see it finish. This is safe because the new
+    // password is the CURRENT one (login is unchanged). Opt OUT with IB_SKIP_RESET_SUBMIT=true
+    // to only fill-and-stop without submitting.
+    if (process.env.IB_SKIP_RESET_SUBMIT !== "true") {
+      await test.step("Submit the new password and validate the reset completes", async () => {
+        await fpwd.submitNewPassword();
+        await fpwd.assertResetComplete();
+      });
+    }
   });
 
   test.afterEach(async ({ page }, testInfo) => attachToastOnFailure(page, testInfo));

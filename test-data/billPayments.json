@@ -14,5 +14,14 @@
     "referenceFieldName": "Your GSM Phone Number",
     "referenceValue": "0712345678",
     "amount": "500"
+  },
+  "byCreditCard": {
+    "category": "Telephone",
+    "biller": "Dialog Mobile",
+    "paymentUsing": "Credit Card",
+    "card": "1071",
+    "referenceFieldName": "Your GSM Phone Number",
+    "referenceValue": "0771234567",
+    "amount": "500"
   }
 }
