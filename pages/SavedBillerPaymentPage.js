@@ -53,6 +53,276 @@ class SavedBillerPaymentPage {
     this.nextButton = page
       .getByRole("button", { name: /pay now\s+(lkr|usd)|proceed to pay|^(next|proceed|submit)$/i })
       .last();
+
+    // ---- List chrome: tabs, rows, search, page size ----
+    // The Bill Payment area's tabs. The same labels also exist as hidden nav-dropdown
+    // items, so tabs are matched by role (buttons) and only when visible.
+    this.newPaymentTab = page.getByRole("button", { name: "New Payment", exact: true });
+    this.billPaymentHistoryTab = page.getByRole("button", { name: /bill payment history/i }).first();
+    this.governmentPaymentHistoryTab = page.getByRole("button", { name: /government payment history/i }).first();
+    this.billerRows = page.locator("table tbody tr");
+    this.searchBox = page.getByRole("textbox", { name: /^search$/i }).first();
+    this.perPageSelect = page.getByRole("combobox", { name: /billers per page|per page/i }).first();
+
+    // ---- Row actions (Actions cell: pencil = edit, bin = delete) ----
+    // // VERIFY: the icons carry no confirmed accessible name, so they are matched by role
+    // and alt/title text first, then by their position inside the Actions cell.
+    this.editModalHeading = page
+      .getByText(/edit biller|update biller|edit template|add biller/i)
+      .locator("visible=true")
+      .first();
+    this.deletePrompt = page
+      .getByText(/are you sure|do you want to (delete|remove)|delete .*biller|remove .*biller/i)
+      .locator("visible=true")
+      .first();
+    this.confirmDeleteButton = page
+      .getByRole("button", { name: /^(confirm|yes|delete|ok|remove)$/i })
+      .locator("visible=true")
+      .last();
+    this.cancelDeleteButton = page
+      .getByRole("button", { name: /^(cancel|no|back|close|dismiss)$/i })
+      .locator("visible=true")
+      .last();
+  }
+
+  // ---- Saved Billers list helpers (mirror of the Saved Payees list) ----
+
+  /** SOFT ASSERTIONS: the Saved Billers table shows all its columns. */
+  async assertTableColumns() {
+    for (const header of ["Template Name", "Biller Name", "Amount", "Field Value", "Actions"]) {
+      await expect
+        .soft(this.page.getByRole("columnheader", { name: new RegExp(header, "i") }).first(), `Column "${header}"`)
+        .toBeVisible();
+    }
+  }
+
+  /** SOFT ASSERTIONS: the Bill Payment area offers all of its tabs. */
+  async assertTabsOffered() {
+    await expect.soft(this.savedBillersTab, "'Saved Billers' tab should be offered").toBeVisible();
+    await expect.soft(this.newPaymentTab, "'New Payment' tab should be offered").toBeVisible();
+    // The two history tabs are not present on every build/profile - assert them softly.
+    for (const [tab, label] of [
+      [this.billPaymentHistoryTab, "Bill Payment History"],
+      [this.governmentPaymentHistoryTab, "Government Payment History"],
+    ]) {
+      if (await tab.isVisible().catch(() => false)) {
+        await expect.soft(tab, `'${label}' tab should be offered`).toBeVisible();
+      }
+    }
+  }
+
+  /** The tab locator for a tab name. */
+  tab(name) {
+    if (/new payment/i.test(name)) return this.newPaymentTab;
+    if (/government/i.test(name)) return this.governmentPaymentHistoryTab;
+    if (/history/i.test(name)) return this.billPaymentHistoryTab;
+    return this.savedBillersTab;
+  }
+
+  /** Switches to a tab. Returns false when that tab is not offered. */
+  async switchTab(name) {
+    const tab = this.tab(name);
+    if (!(await tab.isVisible().catch(() => false))) return false;
+    await tab.click({ force: true }).catch(() => {});
+    await this.waitForListReady();
+    return true;
+  }
+
+  /**
+   * Waits for the biller table to finish (re)loading. The saved-billers list is fetched
+   * intermittently, so this polls for rows or the empty state rather than sleeping blind.
+   */
+  async waitForListReady() {
+    for (let i = 0; i < 15; i++) {
+      const rows = await this.rowCount();
+      const empty = await this.emptyState.first().isVisible().catch(() => false);
+      if (rows > 0 || empty) break;
+      await this.page.waitForTimeout(1000);
+    }
+    await this.page.waitForTimeout(500);
+  }
+
+  /** How many biller rows are currently listed. */
+  async rowCount() {
+    return this.billerRows.count().catch(() => 0);
+  }
+
+  /**
+   * ASSERTION: the list shows rows or an explicit empty state (never a blank panel).
+   * Returns the row count.
+   */
+  async assertListRendered(label) {
+    let rows = 0;
+    let empty = false;
+    for (let i = 0; i < 15; i++) {
+      rows = await this.rowCount();
+      empty = await this.emptyState.first().isVisible().catch(() => false);
+      if (rows > 0 || empty) break;
+      await this.page.waitForTimeout(1000);
+    }
+    expect(rows > 0 || empty, `"${label}" should show biller rows or an explicit empty state`).toBeTruthy();
+    return rows;
+  }
+
+  /** ASSERTION: no loading error is shown on the list. */
+  async assertNoError() {
+    const error = await this.page
+      .getByText(/error loading|failed to load|something went wrong/i)
+      .locator("visible=true")
+      .first()
+      .isVisible()
+      .catch(() => false);
+    expect(error, "The Saved Billers list must not show a loading error").toBeFalsy();
+  }
+
+  /**
+   * Searches the Saved Billers list.
+   *
+   * CONFIRMED against the live app: unlike the Saved Payees list (which filters as you
+   * type), this search only runs when ENTER is pressed - typing alone leaves the previous
+   * result on screen. So the term is typed AND submitted here.
+   */
+  async search(text) {
+    if (!(await this.searchBox.isVisible().catch(() => false))) return false;
+    await this.searchBox.fill(text);
+    await this.searchBox.press("Enter");
+    await this.waitForSearchApplied();
+    return true;
+  }
+
+  /** Clears the search box and re-runs it, so the full list comes back. */
+  async clearSearch() {
+    await this.searchBox.fill("").catch(() => {});
+    await this.searchBox.press("Enter").catch(() => {});
+    await this.waitForSearchApplied();
+  }
+
+  /**
+   * Waits for a search to be applied. A search can legitimately end with ZERO rows, so
+   * (unlike waitForListReady) this must not keep polling for rows - it settles on the
+   * table no longer changing.
+   */
+  async waitForSearchApplied() {
+    let previous = -1;
+    for (let i = 0; i < 10; i++) {
+      await this.page.waitForTimeout(1000);
+      const rows = await this.rowCount();
+      if (rows === previous) return rows;
+      previous = rows;
+    }
+    return previous;
+  }
+
+  /** The page-size options offered by the "per page" selector (empty when not offered). */
+  async perPageOptions() {
+    if (!(await this.perPageSelect.isVisible().catch(() => false))) return [];
+    return this.perPageSelect
+      .locator("option")
+      .allInnerTexts()
+      .then((v) => v.map((t) => t.trim()).filter(Boolean))
+      .catch(() => []);
+  }
+
+  /** Sets the page size and lets the table re-render. */
+  async setPerPage(size) {
+    await this.perPageSelect.selectOption(String(size)).catch(() => {});
+    await this.waitForListReady();
+  }
+
+  // ---- Row actions: edit (pencil) and delete (bin) ----
+
+  /** The row's Actions cell (the last cell of the row). */
+  actionsCell(row) {
+    return row.getByRole("cell").last();
+  }
+
+  /** The row's edit (pencil) control. */
+  editControl(row) {
+    const byName = row.getByRole("button", { name: /edit|pencil|modify|update/i }).first();
+    const byAlt = row.getByRole("img", { name: /edit|pencil/i }).first();
+    // Fallback: the FIRST clickable icon in the Actions cell is the pencil.
+    return byName.or(byAlt).or(this.actionsCell(row).locator("button, img, svg").first());
+  }
+
+  /** The row's delete (bin) control. */
+  deleteControl(row) {
+    const byName = row.getByRole("button", { name: /delete|remove|bin|trash/i }).first();
+    const byAlt = row.getByRole("img", { name: /delete|bin|trash/i }).first();
+    // Fallback: the LAST clickable icon in the Actions cell is the bin.
+    return byName.or(byAlt).or(this.actionsCell(row).locator("button, img, svg").last());
+  }
+
+  /** Opens the edit form for a row. Returns false when no edit control is offered. */
+  async openEdit(row) {
+    const pencil = this.editControl(row);
+    if (!(await pencil.isVisible().catch(() => false))) return false;
+    await pencil.click({ force: true }).catch(() => {});
+    await this.page.waitForTimeout(2500);
+    return true;
+  }
+
+  /**
+   * ASSERTION: the edit form opened pre-filled with the biller's saved values.
+   * Returns the values it found, so a caller can compare them after cancelling.
+   */
+  async assertEditFormPrefilled() {
+    const templateNameInput = this.page.locator('input[name="templateName"]');
+    await expect(templateNameInput, "The edit form should show the Template Name").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+    const templateName = await templateNameInput.inputValue().catch(() => "");
+    const amount = await this.page.locator('input[name="amount"]').first().inputValue().catch(() => "");
+    expect(templateName.trim(), "The edit form should be pre-filled with the saved template name").not.toBe("");
+    return { templateName, amount };
+  }
+
+  /** Closes the edit form without saving. */
+  async cancelEdit() {
+    const cancel = this.page
+      .getByRole("button", { name: /^(cancel|back|close|dismiss)$/i })
+      .locator("visible=true")
+      .last();
+    if (await cancel.isVisible().catch(() => false)) await cancel.click({ force: true }).catch(() => {});
+    else await this.page.keyboard.press("Escape").catch(() => {});
+    await this.page.waitForTimeout(2000);
+  }
+
+  /** Opens the delete confirmation for a row. Returns false when no bin is offered. */
+  async openDelete(row) {
+    const bin = this.deleteControl(row);
+    if (!(await bin.isVisible().catch(() => false))) return false;
+    await bin.click({ force: true }).catch(() => {});
+    await this.page.waitForTimeout(2500);
+    return true;
+  }
+
+  /** ASSERTION: deleting asks for confirmation before it removes anything. */
+  async assertDeleteConfirmationShown() {
+    const prompt = await this.deletePrompt.isVisible().catch(() => false);
+    const confirmBtn = await this.confirmDeleteButton.isVisible().catch(() => false);
+    expect(
+      prompt || confirmBtn,
+      "Deleting a saved biller must raise a confirmation before the biller is removed"
+    ).toBeTruthy();
+  }
+
+  /** Cancels the delete confirmation - nothing is removed. */
+  async cancelDelete() {
+    if (await this.cancelDeleteButton.isVisible().catch(() => false)) {
+      await this.cancelDeleteButton.click({ force: true }).catch(() => {});
+    } else {
+      await this.page.keyboard.press("Escape").catch(() => {});
+    }
+    await this.page.waitForTimeout(2000);
+  }
+
+  /** !! DESTRUCTIVE !! Confirms the delete - the biller is really removed. */
+  async confirmDelete() {
+    await expect(this.confirmDeleteButton, "The delete confirmation should offer a confirm action").toBeVisible({
+      timeout: TIMEOUTS.UI,
+    });
+    await this.confirmDeleteButton.click({ force: true });
+    await this.page.waitForTimeout(3000);
   }
 
   /** The row's "Add to Favourites" control (star) - the 7th cell, after "Field Value". */

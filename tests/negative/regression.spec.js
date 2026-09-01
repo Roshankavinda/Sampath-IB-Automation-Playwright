@@ -34,10 +34,17 @@ test.describe("@Regression - Negative", () => {
   require("./addPayee.spec");
   require("./addBiller.spec");
   require("./transferSavedPayee.spec");
+  require("./savedPayeesList.spec");
+  require("./savedPayeeMaintenance.spec");
+  require("./sendMoneyTabs.spec");
+  require("./sendMoneyTransactionHistory.spec");
   require("./transferSavedPayeeMultiple.spec");
   require("./billPaymentSavedBiller.spec");
   require("./billPaymentSavedBillerMultiple.spec");
   require("./savedBillerFavourite.spec");
+  require("./savedBillersList.spec");
+  require("./billPaymentHistory.spec");
+  require("./savedBillerMaintenance.spec");
   require("./savedPayeeFavourite.spec");
   require("./scheduleFundTransfer.spec");
   require("./scheduleBillPayment.spec");

@@ -39,6 +39,18 @@ class SavedPayeeTransferPage {
     // The submit button carries the running total, so match on its "Transfer LKR ..." prefix.
     this.submitButton = page.getByRole("button", { name: /^transfer\s+lkr/i }).first();
 
+    // ---- Saved Payees list: filters, search, pagination ----
+    // Confirmed columns: Add to List. | Account Number | Account Name | Nickname | Bank Name |
+    // Transaction Type | Add to Favorites | Actions
+    this.filterAll = page.getByText("All", { exact: true }).locator("visible=true").first();
+    this.filterSampath = page.getByText("Sampath Bank Accounts", { exact: true }).locator("visible=true").first();
+    this.filterOtherBank = page.getByText("Other Bank Accounts", { exact: true }).locator("visible=true").first();
+    this.filterOtherCards = page.getByText("Other Bank Cards", { exact: true }).locator("visible=true").first();
+
+    this.searchBox = page.getByRole("textbox", { name: /^search$/i }).first();
+    this.perPageSelect = page.getByRole("combobox", { name: /payees per page/i }).first();
+    this.emptyState = page.getByText(/no .*(payees?|data|records|found)/i).locator("visible=true").first();
+
     // ---- Favourites ----
     // Each row has an "Add to Favorites" cell (a star control). Favourited payees appear in
     // the right-hand "Your favourite list" panel.
@@ -92,6 +104,121 @@ class SavedPayeeTransferPage {
       );
     }
     return row;
+  }
+
+  // ---- Saved Payees list helpers ----
+
+  /** The filter tab locator for a category name. */
+  filterTab(name) {
+    if (/sampath/i.test(name)) return this.filterSampath;
+    if (/card/i.test(name)) return this.filterOtherCards;
+    if (/other/i.test(name)) return this.filterOtherBank;
+    return this.filterAll;
+  }
+
+  /** SOFT ASSERTIONS: the Saved Payees table shows all its columns. */
+  async assertTableColumns() {
+    for (const header of [
+      "Account Number",
+      "Account Name",
+      "Nickname",
+      "Bank Name",
+      "Transaction Type",
+      "Add to Favorites",
+      "Actions",
+    ]) {
+      await expect
+        .soft(this.page.getByRole("columnheader", { name: new RegExp(header, "i") }).first(), `Column "${header}"`)
+        .toBeVisible();
+    }
+  }
+
+  /** SOFT ASSERTIONS: all four account-type filters are offered. */
+  async assertFiltersOffered() {
+    await expect.soft(this.filterAll, "'All' filter should be offered").toBeVisible();
+    await expect.soft(this.filterSampath, "'Sampath Bank Accounts' filter should be offered").toBeVisible();
+    await expect.soft(this.filterOtherBank, "'Other Bank Accounts' filter should be offered").toBeVisible();
+    await expect.soft(this.filterOtherCards, "'Other Bank Cards' filter should be offered").toBeVisible();
+  }
+
+  /**
+   * Waits for the payee table to finish (re)loading. While it loads, the "Payees per page"
+   * selector is DISABLED - that is the app's own loading signal, so it is a far more reliable
+   * gate than a fixed sleep.
+   */
+  async waitForListReady() {
+    for (let i = 0; i < 20; i++) {
+      const busy = await this.perPageSelect.isDisabled().catch(() => true);
+      if (!busy) break;
+      await this.page.waitForTimeout(1000);
+    }
+    await this.page.waitForTimeout(800);
+  }
+
+  /** Applies an account-type filter and waits for the table to refresh. */
+  async applyFilter(name) {
+    const tab = this.filterTab(name);
+    if (!(await tab.isVisible().catch(() => false))) return false;
+    await tab.click({ force: true });
+    await this.waitForListReady();
+    return true;
+  }
+
+  /** How many payee rows are currently listed. */
+  async rowCount() {
+    return this.payeeRows.count().catch(() => 0);
+  }
+
+  /**
+   * ASSERTION: the list shows rows or an explicit empty state (never a blank panel).
+   * Returns the row count.
+   */
+  async assertListRendered(label) {
+    // Poll: the table re-renders asynchronously after a filter/search, and the app does not
+    // always toggle its loading flag, so a single read can land on the empty in-between state.
+    let rows = 0;
+    let empty = false;
+    for (let i = 0; i < 15; i++) {
+      rows = await this.rowCount();
+      empty = await this.emptyState.isVisible().catch(() => false);
+      if (rows > 0 || empty) break;
+      await this.page.waitForTimeout(1000);
+    }
+    expect(rows > 0 || empty, `"${label}" should show payee rows or an explicit empty state`).toBeTruthy();
+    return rows;
+  }
+
+  /** Types into the Saved Payees search box and lets the table filter. */
+  async search(text) {
+    await expect(this.searchBox, "The Saved Payees search box should be visible").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+    await this.searchBox.fill(text);
+    await this.waitForListReady();
+  }
+
+  /** Clears the search box. */
+  async clearSearch() {
+    await this.searchBox.fill("").catch(() => {});
+    await this.waitForListReady();
+  }
+
+  /** The page-size options offered by the "Payees per page" selector. */
+  async perPageOptions() {
+    return this.perPageSelect
+      .locator("option")
+      .allInnerTexts()
+      .then((v) => v.map((t) => t.trim()).filter(Boolean))
+      .catch(() => []);
+  }
+
+  /** Sets the page size and lets the table re-render. */
+  async setPerPage(size) {
+    await expect(this.perPageSelect, "The 'Payees per page' selector should be visible").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+    await this.perPageSelect.selectOption(String(size)).catch(() => {});
+    await this.waitForListReady();
   }
 
   /** ASSERTION: the favourites panel ("Your favourite list") is displayed. */
@@ -350,6 +477,119 @@ class SavedPayeeTransferPage {
     await expect(this.submitButton, "The 'Transfer LKR ...' button should be enabled once the form is valid")
       .toBeEnabled({ timeout: TIMEOUTS.ACTION });
     await this.submitButton.click();
+  }
+
+  // ---- Row actions: edit (pencil) and delete (bin) ----
+  // The Saved Payees table's last column is "Actions", holding a pencil (edit) and a bin
+  // (delete). // VERIFY: the icons carry no confirmed accessible name, so they are matched
+  // by role and alt/title text first, then by their position inside the Actions cell.
+
+  /** The row's Actions cell (the last cell of the row). */
+  actionsCell(row) {
+    return row.getByRole("cell").last();
+  }
+
+  /** The row's edit (pencil) control. */
+  editControl(row) {
+    const byName = row.getByRole("button", { name: /edit|pencil|modify|update/i }).first();
+    const byAlt = row.getByRole("img", { name: /edit|pencil/i }).first();
+    return byName.or(byAlt).or(this.actionsCell(row).locator("button, img, svg").first());
+  }
+
+  /** The row's delete (bin) control. */
+  deleteControl(row) {
+    const byName = row.getByRole("button", { name: /delete|remove|bin|trash/i }).first();
+    const byAlt = row.getByRole("img", { name: /delete|bin|trash/i }).first();
+    return byName.or(byAlt).or(this.actionsCell(row).locator("button, img, svg").last());
+  }
+
+  /** Opens the edit form for a payee row. Returns false when no edit control is offered. */
+  async openEdit(row) {
+    const pencil = this.editControl(row);
+    if (!(await pencil.isVisible().catch(() => false))) return false;
+    await pencil.click({ force: true }).catch(() => {});
+    await this.page.waitForTimeout(2500);
+    return true;
+  }
+
+  /**
+   * ASSERTION: the edit form opened pre-filled with the payee's saved values (it reuses the
+   * "Add New Payee" modal). Returns the values so a caller can compare after cancelling.
+   */
+  async assertEditFormPrefilled() {
+    const nickName = this.page.locator('input[name="nickName"]');
+    await expect(nickName, "The edit form should show the payee's Nickname").toBeVisible({ timeout: TIMEOUTS.LOAD });
+    const values = {
+      nickName: await nickName.inputValue().catch(() => ""),
+      accountName: await this.page.locator('input[name="accountName"]').inputValue().catch(() => ""),
+      accountNumber: await this.page.locator('input[name="toAccountNumber"]').inputValue().catch(() => ""),
+    };
+    expect(values.nickName.trim(), "The edit form should be pre-filled with the saved nickname").not.toBe("");
+    return values;
+  }
+
+  /** Closes the edit form without saving. */
+  async cancelEdit() {
+    const cancel = this.page
+      .getByRole("button", { name: /^(cancel|back|close|dismiss)$/i })
+      .locator("visible=true")
+      .last();
+    if (await cancel.isVisible().catch(() => false)) await cancel.click({ force: true }).catch(() => {});
+    else await this.page.keyboard.press("Escape").catch(() => {});
+    await this.page.waitForTimeout(2000);
+  }
+
+  /** Opens the delete confirmation for a payee row. Returns false when no bin is offered. */
+  async openDelete(row) {
+    const bin = this.deleteControl(row);
+    if (!(await bin.isVisible().catch(() => false))) return false;
+    await bin.click({ force: true }).catch(() => {});
+    await this.page.waitForTimeout(2500);
+    return true;
+  }
+
+  /** ASSERTION: deleting asks for confirmation before it removes anything. */
+  async assertDeleteConfirmationShown() {
+    const prompt = await this.page
+      .getByText(/are you sure|do you want to (delete|remove)|delete .*payee|remove .*payee/i)
+      .locator("visible=true")
+      .first()
+      .isVisible()
+      .catch(() => false);
+    const confirmBtn = await this.page
+      .getByRole("button", { name: /^(confirm|yes|delete|ok|remove)$/i })
+      .locator("visible=true")
+      .last()
+      .isVisible()
+      .catch(() => false);
+    expect(
+      prompt || confirmBtn,
+      "Deleting a saved payee must raise a confirmation before the payee is removed"
+    ).toBeTruthy();
+  }
+
+  /** Cancels the delete confirmation - nothing is removed. */
+  async cancelDelete() {
+    const cancel = this.page
+      .getByRole("button", { name: /^(cancel|no|back|close|dismiss)$/i })
+      .locator("visible=true")
+      .last();
+    if (await cancel.isVisible().catch(() => false)) await cancel.click({ force: true }).catch(() => {});
+    else await this.page.keyboard.press("Escape").catch(() => {});
+    await this.page.waitForTimeout(2000);
+  }
+
+  /** !! DESTRUCTIVE !! Confirms the delete - the payee is really removed. */
+  async confirmDelete() {
+    const confirm = this.page
+      .getByRole("button", { name: /^(confirm|yes|delete|ok|remove)$/i })
+      .locator("visible=true")
+      .last();
+    await expect(confirm, "The delete confirmation should offer a confirm action").toBeVisible({
+      timeout: TIMEOUTS.UI,
+    });
+    await confirm.click({ force: true });
+    await this.page.waitForTimeout(3000);
   }
 }
 

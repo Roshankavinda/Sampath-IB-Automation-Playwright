@@ -1,7 +1,7 @@
 {
   "credentials": {
-    "username": "gsuser4",
-    "password": "Hoax@666",
+    "username": "agurusinghe",
+    "password": "Hoax@1234",
     "otp": "111111"
   },
   "invalidCredentials": {
@@ -15,8 +15,8 @@
     }
   },
   "webCard": {
-    "username": "v11user8",
-    "password": "Hoax@666",
+    "username": "agurusinghe",
+    "password": "Hoax@1234",
     "otp": "111111",
     "residentType": "Resident"
   },
