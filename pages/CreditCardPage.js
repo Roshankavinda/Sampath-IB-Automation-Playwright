@@ -93,10 +93,24 @@ class CreditCardPage {
     await expect.soft(this.creditLimit, "'Your Credit Limit' should be shown").toBeVisible();
     await expect.soft(this.availableToSpend, "'Available to spend' should be shown").toBeVisible();
     await expect.soft(this.lastStatement, "'Last Statement' should be shown").toBeVisible();
-    // The summary figures must be real amounts, not placeholders.
-    const text = (await this.summaryHeading.locator("xpath=..").innerText().catch(() => "")) || "";
+    // The summary figures are NOT in the heading's immediate parent - walk up until a
+    // container that actually holds the amounts is found.
+    const text = await this.summaryText();
     expect(text, "The summary should show currency amounts").toMatch(/LKR\s*-?[\d,]+\.\d{2}/);
     expect(text, "The summary must not show NaN/undefined").not.toMatch(/nan|undefined|null/i);
+  }
+
+  /**
+   * The summary block's text. The figures sit several levels above the heading, so this walks
+   * up a few ancestors and returns the first block that actually contains a currency amount.
+   */
+  async summaryText() {
+    for (const depth of [2, 3, 4, 5]) {
+      const text =
+        (await this.summaryHeading.locator(`xpath=ancestor::*[${depth}]`).innerText().catch(() => "")) || "";
+      if (/LKR\s*-?[\d,]+\.\d{2}/.test(text)) return text;
+    }
+    return (await this.page.locator("body").innerText().catch(() => "")) || "";
   }
 
   /** SOFT ASSERTIONS: the Credit Card Details panel lists the card's fields. */

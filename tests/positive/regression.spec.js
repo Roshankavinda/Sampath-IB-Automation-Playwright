@@ -56,11 +56,14 @@ test.describe("@Regression - Positive", () => {
   require("./scheduleBillPayment.spec");
   require("./manageScheduleFundTransfer.spec");
   require("./manageScheduleBiller.spec");
+  require("./manageScheduleFilters.spec");
   require("./fdCreate.spec");
   require("./loanSettlement.spec");
   require("./webCardOpening.spec");
   require("./slipless.spec");
+  require("./sliplessPayeesInquiry.spec");
   require("./selfServices.spec");
   require("./messages.spec");
+  require("./messagesInbox.spec");
   require("./settings.spec");
 });

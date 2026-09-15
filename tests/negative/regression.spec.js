@@ -19,6 +19,7 @@ test.describe("@Regression - Negative", () => {
   require("./crossCutting.spec");
   require("./manageScheduleFundTransfer.spec");
   require("./manageScheduleBiller.spec");
+  require("./manageScheduleFilters.spec");
   require("./loanSettlement.spec");
   require("./quickActions.spec");
   require("./freezeAccounts.spec");
@@ -29,6 +30,11 @@ test.describe("@Regression - Negative", () => {
   require("./fundTransferMobileCash.spec");
   require("./fundTransferOtherCreditCard.spec");
   require("./ownCardSettlement.spec");
+  require("./transactionHistory.spec");
+  require("./myAccounts.spec");
+  require("./creditCardRequest.spec");
+  require("./creditCardBlock.spec");
+  require("./creditCard.spec");
   require("./stopCard.spec");
   require("./billPayment.spec");
   require("./addPayee.spec");
@@ -51,6 +57,7 @@ test.describe("@Regression - Negative", () => {
   require("./fdCreate.spec");
   require("./webCardOpening.spec");
   require("./slipless.spec");
+  require("./sliplessPayeesInquiry.spec");
   require("./selfServices.spec");
   require("./messages.spec");
   require("./settings.spec");

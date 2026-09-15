@@ -28,6 +28,7 @@
     "test:savedbiller": "playwright test tests/*/billPaymentSavedBiller.spec.js --headed",
     "test:savedbillerlist": "playwright test tests/*/savedBillersList.spec.js --headed",
     "test:billhistory": "playwright test tests/*/billPaymentHistory.spec.js --headed",
+    "test:schedulefilters": "playwright test tests/*/manageScheduleFilters.spec.js --headed",
     "test:billermaintenance": "playwright test tests/*/savedBillerMaintenance.spec.js --headed",
     "test:payeemaintenance": "playwright test tests/*/savedPayeeMaintenance.spec.js --headed",
     "test:sendmoneytabs": "playwright test tests/*/sendMoneyTabs.spec.js --headed",

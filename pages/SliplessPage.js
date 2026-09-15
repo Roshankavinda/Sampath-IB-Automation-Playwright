@@ -43,9 +43,67 @@ class SliplessPage {
     this.amountInput = page.locator('input[name="amount"]');
     this.nextButton = page.getByRole("button", { name: "Next", exact: true });
     this.proceedButton = page.getByRole("button", { name: "Proceed", exact: true });
+
+    // ---- My Payees tab (confirmed live) ----
+    // "Saved Payees / Manage your all time saved payees." + an "Add New Payee" button.
+    this.payeesHeading = page.getByText(/manage your all time saved payees/i).first();
+    this.addNewPayeeButton = page.getByRole("button", { name: /add new payee/i }).first();
+    this.payeeRows = page.locator("table tbody tr");
+
+    // ---- Inquiry tab (confirmed live) ----
+    // "Inquiries / View all slipless inquiries." + Filters button + Search box.
+    this.inquiryHeading = page.getByText(/view all slipless inquiries/i).first();
+    this.filtersButton = page.getByRole("button", { name: /^filters?$/i }).first();
+    this.inquirySearch = page.getByPlaceholder(/^search$/i).first();
+    this.inquiryRows = page.locator("table tbody tr");
+
+    // Shared: the right-hand "Recently Generated Deposit Slips" panel, empty/error states.
+    this.recentSlipsPanel = page.getByText(/recently generated deposit slips/i).first();
+    this.emptyState = page.getByText(/no .*(payees?|inquir|data|records|found)/i).locator("visible=true").first();
+    this.errorState = page.getByText(/error loading data|failed to load|something went wrong/i).locator("visible=true").first();
   }
 
   /** ASSERTION: the Slipless Banking page with its tabs is displayed. */
+  /** Opens the My Payees tab and asserts its section is displayed. */
+  async openMyPayees() {
+    await this.myPayeesTab.click({ force: true });
+    await expect(this.payeesHeading, "The Saved Payees section should be shown on the My Payees tab").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+    await this.page.waitForTimeout(3000);
+  }
+
+  /** Opens the Inquiry tab and asserts its section is displayed. */
+  async openInquiry() {
+    await this.inquiryTab.click({ force: true });
+    await expect(this.inquiryHeading, "The Inquiries section should be shown on the Inquiry tab").toBeVisible({
+      timeout: TIMEOUTS.LOAD,
+    });
+    await this.page.waitForTimeout(4000);
+  }
+
+  /**
+   * ASSERTION: a listing shows rows or an explicit empty state (polls the async render).
+   * Returns { rows, empty, error } so callers can also see a backend error state.
+   */
+  async readListState(rowsLocator) {
+    let rows = 0;
+    let empty = false;
+    let error = false;
+    for (let i = 0; i < 12; i++) {
+      rows = await rowsLocator.count().catch(() => 0);
+      empty = await this.emptyState.isVisible().catch(() => false);
+      error = await this.errorState.isVisible().catch(() => false);
+      // Rows or an error are final. An "empty" read is only trusted once the list has had
+      // time to settle - the backend's "Error loading data" renders a few seconds AFTER the
+      // initial empty frame, and must not be mistaken for a legitimately empty list.
+      if (rows > 0 || error) break;
+      if (empty && i >= 5) break;
+      await this.page.waitForTimeout(1000);
+    }
+    return { rows, empty, error };
+  }
+
   async assertLoaded() {
     await expect(this.heading, "'Slipless Banking' heading should be visible").toBeVisible({ timeout: TIMEOUTS.SLOW_LOAD });
     await expect(this.cashDepositTab, "'Cash Deposit' tab should be visible").toBeVisible({ timeout: TIMEOUTS.LOAD });
